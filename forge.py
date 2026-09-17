@@ -2,11 +2,11 @@ import os
 import sys
 import json
 import subprocess
-import google.generativeai as genai
+from google import genai
 
 # 1. Initialize Gemini
-genai.configure(api_key=os.environ["GEMINI_API_KEY"])
-model = genai.GenerativeModel('gemini-1.5-flash')
+# The new Client automatically looks for os.environ["GEMINI_API_KEY"] behind the scenes!
+client = genai.Client()
 
 def load_state():
     if os.path.exists("state.json"):
@@ -23,7 +23,7 @@ def run_pipeline(interactive=False):
     if state["status"] == "IDEATION":
         print("💡 Generating Game Concept...")
         prompt = "Create a 1-sentence concept for a highly addictive, arcade-style HTML5 web game."
-        concept = model.generate_content(prompt).text
+        concept = client.models.generate_content(model='gemini-1.5-flash', contents=prompt).text
         state["game_name"] = concept
         state["status"] = "CODE_GEN"
         save_state(state)
@@ -35,7 +35,7 @@ def run_pipeline(interactive=False):
     if state["status"] == "CODE_GEN":
         print("⚙️ Writing Kaboom.js Code...")
         prompt = f"Write a complete, single-file Kaboom.js game based on this concept: {state['game_name']}. Only output the raw javascript code, no markdown."
-        code = model.generate_content(prompt).text
+        code = client.models.generate_content(model='gemini-1.5-flash', contents=prompt).text
         
         # Inject code into the Vite template
         with open("game-template/main.js", "w") as f:
