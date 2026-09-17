@@ -18,7 +18,7 @@ PORTAL_PORT = "5173"
 # Initialize Gemini Client
 client = genai.Client()
 
-def generate_with_retry(prompt, model=MODEL_FLASH, retries=10, delay=15, is_json=False):
+def generate_with_retry(prompt, model=MODEL_FLASH, retries=10, delay=30, is_json=False):
     """Generates content with automatic backoff for 503 Server Unavailable errors."""
     config = types.GenerateContentConfig(response_mime_type="application/json") if is_json else None
     
