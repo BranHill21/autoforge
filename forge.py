@@ -43,7 +43,10 @@ def extract_js(text):
 
 def load_state():
     if os.path.exists("state.json"):
-        with open("state.json", "r") as f: return json.load(f)
+        try:
+            with open("state.json", "r") as f: return json.load(f)
+        except json.JSONDecodeError:
+            print("⚠️ state.json is corrupted. Starting fresh.")
     return {"status": "IDEATION", "game_name": "", "code": ""}
 
 def save_state(state):
@@ -254,6 +257,14 @@ def run_pipeline(interactive=False):
 
 if __name__ == "__main__":
     is_interactive = "--auto" not in sys.argv
+    
+    if "--new" in sys.argv:
+        print("🗑️  --new flag detected. Wiping previous state...")
+        for file in ["state.json", "game-template/main.js", "game-template/instructions.txt"]:
+            if os.path.exists(file):
+                os.remove(file)
+    elif os.path.exists("state.json"):
+        print("▶️  Resuming from previous state. (Run with --new to start fresh).")
     
     # If the user passes --batch N, run it N times.
     batch_count = 1
