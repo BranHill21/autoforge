@@ -24,16 +24,17 @@ def generate_with_retry(prompt, model=MODEL_FLASH, retries=10, delay=30, is_json
     
     for attempt in range(retries):
         try:
-            return client.models.generate_content(
-                model=model,
-                contents=prompt,
-                config=config
-            ).text
-        except errors.ServerError:
-            print(f"⏳ Server busy (503). Retrying in {delay} seconds (Attempt {attempt + 1}/{retries})...")
-            time.sleep(delay)
+            chat = client.chats.create(model=model, config=config)
+            return chat.send_message(prompt).text
+        except errors.APIError as e:
+            if "429" in str(e) or "503" in str(e):
+                print(f"⏳ Rate limit or server busy. Retrying in {delay} seconds (Attempt {attempt + 1}/{retries})...")
+                time.sleep(delay)
+            else:
+                print(f"❌ Unrecoverable API Error: {e}")
+                sys.exit(1)
     
-    print("❌ Server consistently busy. Exiting pipeline safely. Try again later.")
+    print("❌ Repeated API errors. Exiting pipeline safely. Try again later.")
     sys.exit(1)
 
 def extract_js(text):
