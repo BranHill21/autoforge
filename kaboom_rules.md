@@ -81,3 +81,30 @@ player.onCollide("enemy", (e, col) => { /* Collision handling */ });
 wait(2, () => { /* timeout */ });
 loop(1, () => { /* interval */ });
 ```
+
+## UI & Buttons (Menus)
+To create interactive menu buttons, use an `area()` component and the `.onClick()` and `.onHoverUpdate()` methods.
+```javascript
+const btn = add([
+    rect(200, 50),
+    pos(center()),
+    anchor("center"),
+    area(),
+    color(255, 255, 255),
+]);
+btn.add([ text("Start Game", { size: 24 }), anchor("center"), color(0,0,0) ]);
+
+btn.onClick(() => { go("game"); });
+btn.onHoverUpdate(() => { btn.color = rgb(200, 200, 200); });
+btn.onHoverEnd(() => { btn.color = rgb(255, 255, 255); });
+```
+
+## Ad Hooks (Monetization)
+Always define global ad functions at the top of your script. Call them when a player dies or when they click a "Watch Ad" button.
+```javascript
+window.showInterstitialAd = () => { console.log("Ad Placeholder: Interstitial Ad Shown"); };
+window.showRewardedAd = (rewardCallback) => { 
+    console.log("Ad Placeholder: Rewarded Ad Shown"); 
+    if (rewardCallback) rewardCallback();
+};
+```

@@ -104,7 +104,7 @@ def run_pipeline(interactive=False):
     # PHASE 1: IDEATION
     if state["status"] == "IDEATION":
         print("💡 Generating Game Concept...")
-        prompt = "Create a detailed concept for a highly addictive, arcade-style HTML5 web game. Include the core gameplay loop, distinct visual style, specific controls, and the flow from the start menu to game over."
+        prompt = "Create a detailed concept for a highly addictive web game. DO NOT default to a basic platformer. Pick a random, distinct game genre (e.g., Puzzle, Top-down Shooter, Tower Defense, Space Invaders, Match-3, Idle Game, Action RPG, Physics Game). Include the core gameplay loop, distinct visual style, specific controls, and the flow from the start menu to game over."
         
         concept = generate_with_retry(prompt)
         
