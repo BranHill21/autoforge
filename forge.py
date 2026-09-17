@@ -114,30 +114,49 @@ def run_pipeline(interactive=False):
     # PHASE 1: IDEATION
     if state["status"] == "IDEATION":
         print("💡 Generating Game Concept...")
-        prompt = "Create a 1-sentence concept for a highly addictive, arcade-style HTML5 web game."
+        prompt = "Create a detailed concept for a highly addictive, arcade-style HTML5 web game. Include the core gameplay loop, distinct visual style, specific controls, and the flow from the start menu to game over."
         
         concept = generate_with_retry(prompt)
         
-        state["game_name"] = concept.replace('"', '').strip()
+        # Extract a short name for the git commit
+        state["game_name"] = concept.split('\n')[0].replace('"', '').strip()[:40]
+        state["concept"] = concept
         state["status"] = "CODE_GEN"
         save_state(state)
         
         if interactive:
-            input(f"\nConcept generated: {state['game_name']}\nPress Enter to approve or Ctrl+C to exit safely...")
+            input(f"\nConcept generated:\n{concept}\n\nPress Enter to approve or Ctrl+C to exit safely...")
 
     # PHASE 2: CODE GENERATION
     if state["status"] == "CODE_GEN":
         print("⚙️ Writing Kaboom.js Code...")
-        # Note: We explicitly instruct the AI to use modern Kaboom syntax and module imports.
-        prompt = f"Write a complete, single-file Kaboom.js game based on this concept: '{state['game_name']}'. Import kaboom at the top using `import kaboom from 'kaboom';`. Initialize it with `kaboom();`. Output ONLY the raw javascript code, no markdown, no explanations."
+        game_concept = state.get("concept", state["game_name"])
+        prompt = f"Write a complete, single-file Kaboom.js game based on this concept:\n\n'{game_concept}'\n\nCRITICAL REQUIREMENTS:\n1. The game must be fully visualized and implemented.\n2. You must include a Start Menu, a Game Over screen, and Score tracking.\n3. Include an on-screen instructions overlay or text.\n4. Ensure all controls are fully functional and error-free.\n5. Import kaboom at the top using `import kaboom from 'kaboom';`. Initialize it with `kaboom();`.\nOutput ONLY the raw javascript code, no markdown, no explanations."
         
-        # raw_output = generate_with_retry(prompt)
         raw_output = generate_with_ollama(prompt)
         clean_code = extract_js(raw_output)
         
         os.makedirs("game-template", exist_ok=True)
         with open("game-template/main.js", "w") as f:
             f.write(clean_code)
+            
+        state["status"] = "LOCAL_REVIEW"
+        save_state(state)
+
+    # PHASE 2.5: LOCAL CODE REVIEW
+    if state["status"] == "LOCAL_REVIEW":
+        print("🔍 Performing Local Code Review...")
+        with open("game-template/main.js", "r") as f:
+            current_code = f.read()
+            
+        review_prompt = f"Please review this Kaboom.js game code for any missing elements (like Start/Game Over menus, visual assets, or instructions), logic flaws, or potential runtime errors that could come up later. If you find issues, fix them and improve the code. The game must be 100% playable from start to finish. Ensure it includes `import kaboom from 'kaboom';` and `kaboom();`.\n\nCurrent Code:\n{current_code}\n\nOutput ONLY the improved raw javascript code."
+        
+        print("🔄 Applying improvements from review...")
+        reviewed_output = generate_with_ollama(review_prompt)
+        clean_reviewed_code = extract_js(reviewed_output)
+        
+        with open("game-template/main.js", "w") as f:
+            f.write(clean_reviewed_code)
             
         state["status"] = "LOCAL_QA"
         save_state(state)
@@ -161,9 +180,8 @@ def run_pipeline(interactive=False):
                 with open("game-template/main.js", "r") as f:
                     current_code = f.read()
                 
-                fix_prompt = f"The following Kaboom.js game code threw these errors in the browser console:\n\n{err_msg}\n\nHere is the current code:\n{current_code}\n\nPlease fix the errors and output the corrected full single-file javascript code. Ensure it includes `import kaboom from 'kaboom';` and `kaboom();`. Output ONLY the raw javascript code."
+                fix_prompt = f"The following Kaboom.js game code threw these errors in the browser console:\n\n{err_msg}\n\nHere is the current code:\n{current_code}\n\nPlease fix the errors and output the corrected full single-file javascript code. IMPORTANT: Retain all existing features, menus, instructions, and visual elements. Do not strip functionality while fixing errors. Ensure it includes `import kaboom from 'kaboom';` and `kaboom();`. Output ONLY the raw javascript code."
                 
-                # raw_fixed_output = generate_with_retry(fix_prompt)
                 raw_fixed_output = generate_with_ollama(fix_prompt)
                 clean_fixed_code = extract_js(raw_fixed_output)
                 
@@ -172,11 +190,28 @@ def run_pipeline(interactive=False):
                     
         if qa_passed:
             print("✅ QA Passed. Zero console errors.")
-            state["status"] = "GITHUB_PUSH"
+            state["status"] = "GENERATE_INSTRUCTIONS"
             save_state(state)
         else:
             print("❌ QA Failed repeatedly. Exiting pipeline to allow manual inspection.")
             sys.exit(1)
+
+    # PHASE 3.5: GENERATE INSTRUCTIONS
+    if state["status"] == "GENERATE_INSTRUCTIONS":
+        print("📝 Generating instructions.txt for itch.io...")
+        with open("game-template/main.js", "r") as f:
+            final_code = f.read()
+            
+        instructions_prompt = f"Read the following completed game code and write a short, engaging description and instructions manual suitable for an itch.io page. Include a brief summary, how to play, and controls.\n\nCode:\n{final_code}\n\nOutput only the text content for the instructions file."
+        
+        instructions = generate_with_ollama(instructions_prompt)
+        
+        with open("game-template/instructions.txt", "w") as f:
+            f.write(instructions.strip())
+            
+        print("✅ instructions.txt generated.")
+        state["status"] = "GITHUB_PUSH"
+        save_state(state)
 
     # PHASE 4: GITHUB DEPLOYMENT
     if state["status"] == "GITHUB_PUSH":
