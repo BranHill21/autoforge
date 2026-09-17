@@ -59,12 +59,16 @@ if (isMousePressed()) { player.jump(600); }
 - Move: `player.move(vx, vy)`.
 - Jump: `player.jump(power)`.
 
-## Loading Assets (Sprites)
+## Loading Assets (Sprites & Audio)
 Load images directly from raw CDNs or Data URIs.
 ```javascript
 loadSprite("bean", "https://kaboomjs.com/sprites/bean.png");
-loadSprite("kenney_player", "https://raw.githubusercontent.com/KenneyNL/Platformer-Art-Complete-Pack-Base/master/Base%20pack/Player/p1_stand.png");
+// Audio
+loadSound("jump", "https://kaboomjs.com/sounds/jump.mp3");
+play("jump");
 ```
+
+> **CRITICAL ASSET RULE:** If you are not 100% certain of a valid image URL, DO NOT guess. A 404 error will crash the game. Instead, use emojis in a `text()` component or use colored `rect()`/`circle()` components to represent characters and items.
 
 ## Scenes
 - Define scenes with `scene("name", () => {})` and switch with `go("name")`.
