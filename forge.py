@@ -4,6 +4,7 @@ import json
 import subprocess
 import time
 import re
+import ollama
 from google import genai
 from google.genai import errors
 from playwright.sync_api import sync_playwright
@@ -31,6 +32,16 @@ def generate_with_retry(prompt, retries=5, delay=15):
     
     print("❌ Server consistently busy. Exiting pipeline safely. Try again later.")
     sys.exit(1)
+    
+def generate_with_ollama(prompt, model_name='qwen2.5-coder:7b'):
+    """Generates content using the local Ollama model."""
+    response = ollama.chat(model=model_name, messages=[
+        {
+            'role': 'user',
+            'content': prompt,
+        }
+    ])
+    return response['message']['content']
 
 def extract_js(text):
     """Safely extracts raw JavaScript from LLM markdown output."""
@@ -120,7 +131,8 @@ def run_pipeline(interactive=False):
         # Note: We explicitly instruct the AI to use modern Kaboom syntax and module imports.
         prompt = f"Write a complete, single-file Kaboom.js game based on this concept: '{state['game_name']}'. Import kaboom at the top using `import kaboom from 'kaboom';`. Initialize it with `kaboom();`. Output ONLY the raw javascript code, no markdown, no explanations."
         
-        raw_output = generate_with_retry(prompt)
+        # raw_output = generate_with_retry(prompt)
+        raw_output = generate_with_ollama(prompt)
         clean_code = extract_js(raw_output)
         
         os.makedirs("game-template", exist_ok=True)
@@ -151,7 +163,8 @@ def run_pipeline(interactive=False):
                 
                 fix_prompt = f"The following Kaboom.js game code threw these errors in the browser console:\n\n{err_msg}\n\nHere is the current code:\n{current_code}\n\nPlease fix the errors and output the corrected full single-file javascript code. Ensure it includes `import kaboom from 'kaboom';` and `kaboom();`. Output ONLY the raw javascript code."
                 
-                raw_fixed_output = generate_with_retry(fix_prompt)
+                # raw_fixed_output = generate_with_retry(fix_prompt)
+                raw_fixed_output = generate_with_ollama(fix_prompt)
                 clean_fixed_code = extract_js(raw_fixed_output)
                 
                 with open("game-template/main.js", "w") as f:
