@@ -11,7 +11,7 @@ from playwright.sync_api import sync_playwright
 # ==========================================
 # GLOBAL CONFIGURATION
 # ==========================================
-MODEL_FLASH = 'gemini-3.8-flash'
+MODEL_FLASH = 'gemini-3-flash'
 MODEL_PRO = 'gemini-2.5-pro'
 PORTAL_PORT = "5173"
 
