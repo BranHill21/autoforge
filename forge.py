@@ -5,7 +5,7 @@ import subprocess
 import time
 import re
 from google import genai
-from google.genai import errors
+from google.genai import errors, types
 from playwright.sync_api import sync_playwright
 
 # ==========================================
@@ -18,13 +18,16 @@ PORTAL_PORT = "5173"
 # Initialize Gemini Client
 client = genai.Client()
 
-def generate_with_retry(prompt, model=MODEL_FLASH, retries=10, delay=15):
+def generate_with_retry(prompt, model=MODEL_FLASH, retries=10, delay=15, is_json=False):
     """Generates content with automatic backoff for 503 Server Unavailable errors."""
+    config = types.GenerateContentConfig(response_mime_type="application/json") if is_json else None
+    
     for attempt in range(retries):
         try:
             return client.models.generate_content(
                 model=model,
-                contents=prompt
+                contents=prompt,
+                config=config
             ).text
         except errors.ServerError:
             print(f"⏳ Server busy (503). Retrying in {delay} seconds (Attempt {attempt + 1}/{retries})...")
@@ -52,6 +55,10 @@ def run_qa_test():
     if not os.path.exists("game-template/node_modules"):
         print("📦 Installing Node dependencies...")
         subprocess.run(["npm", "install"], cwd="game-template", stdout=subprocess.DEVNULL)
+
+    print("🌐 Cleaning up old server processes...")
+    if sys.platform == "darwin" or sys.platform == "linux":
+        os.system(f"lsof -ti:{PORTAL_PORT} | xargs kill -9 2>/dev/null")
 
     print("🌐 Starting local Vite dev server...")
     # Start Vite on a strict port so it doesn't randomly change
@@ -122,7 +129,7 @@ def run_pipeline(interactive=False):
         print("📋 Generating Game Design Document (GDD)...")
         gdd_prompt = f"You are a professional game designer. Expand this concept into a strict JSON Game Design Document:\n\n{state['concept']}\n\nThe JSON must include these keys:\n- 'core_loop': How the player plays.\n- 'juice': Mandatory visual/audio polish (particles, screen shake).\n- 'progression': How the game scales difficulty or unlocks.\n- 'ad_hooks': Where to trigger showInterstitialAd() and showRewardedAd().\n- 'assets': A list of required open-source Kenney.nl asset URLs.\n\nOutput ONLY valid JSON."
         
-        gdd = generate_with_retry(gdd_prompt, model=MODEL_FLASH)
+        gdd = generate_with_retry(gdd_prompt, model=MODEL_FLASH, is_json=True)
         state["gdd"] = gdd
         state["status"] = "CODE_GEN"
         save_state(state)
@@ -190,8 +197,14 @@ def run_pipeline(interactive=False):
                 
                 with open("game-template/main.js", "r") as f:
                     current_code = f.read()
+                    
+                try:
+                    with open("kaboom_rules.md", "r") as f:
+                        rules = f.read()
+                except FileNotFoundError:
+                    rules = ""
                 
-                fix_prompt = f"The following Kaboom.js game code threw these errors in the browser console:\n\n{err_msg}\n\nHere is the current code:\n{current_code}\n\nPlease fix the errors and output the corrected full single-file javascript code. IMPORTANT: Retain all existing features, menus, instructions, and visual elements. Do not strip functionality while fixing errors. Ensure it includes `import kaboom from 'kaboom';` and `kaboom({{ width: 800, height: 600, letterbox: true }});`. Output ONLY the raw javascript code."
+                fix_prompt = f"The following Kaboom.js game code threw these errors in the browser console:\n\n{err_msg}\n\nHere is the current code:\n{current_code}\n\nStrict Rules:\n{rules}\n\nPlease fix the errors and output the corrected full single-file javascript code. IMPORTANT: Retain all existing features, menus, instructions, and visual elements. Do not strip functionality while fixing errors. Ensure it includes `import kaboom from 'kaboom';` and `kaboom({{ width: 800, height: 600, letterbox: true }});`. Output ONLY the raw javascript code."
                 
                 raw_fixed_output = generate_with_retry(fix_prompt, model=MODEL_FLASH)
                 clean_fixed_code = extract_js(raw_fixed_output)
