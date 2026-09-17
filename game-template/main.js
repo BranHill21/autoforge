@@ -1,95 +1,126 @@
 import kaboom from 'kaboom';
 
-kaboom();
-
-// No external assets needed; using Kaboom primitives
-
-const gameLevel = () => {
-  let score = 0;
-
-  add([
-    rect(30, 30),
-    color(0, 255, 255),
-    pos(100, 100),
-    anchor("center"),
-    scale(2),
-    area(),
-    body(),
-    "player",
-  ]);
-
-  const hazards = [];
-  const spawnRate = 100;
-  const hazardSpeed = 200;
-  let spawnTimer = 0;
-
-  function spawnHazard() {
-    const hazard = add([
-      rect(20, 20),
-      pos(width(), rand(height())),
-      color(255, 0, 0),
-      area(),
-      "hazard",
-      { speed: hazardSpeed },
-    ]);
-    hazards.push(hazard);
-  }
-
-  function updateHazards() {
-    spawnTimer++;
-    if (spawnTimer >= spawnRate) {
-      spawnHazard();
-      spawnTimer = 0;
-    }
-
-    for (let i = hazards.length - 1; i >= 0; i--) {
-      const hazard = hazards[i];
-      hazard.pos.x -= hazard.speed * dt();
-      if (hazard.pos.x < -20) {
-        destroy(hazard);
-        hazards.splice(i, 1);
-      }
-    }
-  }
-
-  function checkCollisions() {
-    const players = get("player");
-    if (!players || players.length === 0) return;
-    const spark = players[0];
-    
-    for (let i = hazards.length - 1; i >= 0; i--) {
-      const hazard = hazards[i];
-      
-      if (spark.isColliding(hazard)) {
-        score++;
-        destroy(hazard);
-        hazards.splice(i, 1);
-      }
-    }
-  }
-
-  return {
-    update: () => {
-      updateHazards();
-      checkCollisions();
-    },
-    getScore: () => score
-  };
-};
-
-scene("game", () => {
-  const game = gameLevel();
-  
-  const scoreText = add([
-    text("Score: 0", { size: 24 }),
-    anchor("topleft"),
-    pos(10, 10),
-  ]);
-
-  onUpdate(() => {
-    game.update();
-    scoreText.text = "Score: " + game.getScore();
-  });
+kaboom({
+  width: 800,
+  height: 600,
+  background: [ 10, 10, 20 ],
 });
 
-go("game");
+// Set gravity
+setGravity(1600);
+
+scene("start", () => {
+    add([
+        text("P U L S A R", { size: 64 }),
+        pos(width()/2, height()/2 - 50),
+        anchor("center"),
+    ]);
+
+    add([
+        text("Press SPACE to start", { size: 24 }),
+        pos(width()/2, height()/2 + 50),
+        anchor("center"),
+    ]);
+
+    add([
+        text("Controls: SPACE to jump. Avoid falling and red blocks.", { size: 16 }),
+        pos(width()/2, height() - 50),
+        anchor("center"),
+    ]);
+
+    onKeyPress("space", () => {
+        go("game");
+    });
+});
+
+scene("game", () => {
+    let score = 0;
+
+    const scoreLabel = add([
+        text(score, { size: 32 }),
+        pos(24, 24),
+    ]);
+
+    const player = add([
+        rect(32, 32),
+        color(0, 255, 0),
+        pos(80, 40),
+        area(),
+        body(),
+        "player"
+    ]);
+
+    // Floor
+    add([
+        rect(width(), 48),
+        pos(0, height() - 48),
+        outline(4),
+        area(),
+        body({ isStatic: true }),
+        color(100, 100, 100),
+    ]);
+
+    onKeyPress("space", () => {
+        if (player.isGrounded()) {
+            player.jump(600);
+        }
+    });
+
+    // Spawn obstacles
+    function spawnObstacle() {
+        add([
+            rect(48, rand(32, 96)),
+            area(),
+            outline(4),
+            pos(width(), height() - 48),
+            anchor("botleft"),
+            color(255, 0, 0),
+            move(LEFT, 300),
+            "obstacle",
+        ]);
+        wait(rand(1.5, 2.5), spawnObstacle);
+    }
+    spawnObstacle();
+
+    player.onCollide("obstacle", () => {
+        go("lose", score);
+    });
+
+    player.onUpdate(() => {
+        if (player.pos.y >= height()) {
+            go("lose", score);
+        }
+    });
+
+    onUpdate(() => {
+        score++;
+        scoreLabel.text = Math.floor(score / 10);
+    });
+});
+
+scene("lose", (score) => {
+    add([
+        text("GAME OVER", { size: 64 }),
+        pos(width()/2, height()/2 - 50),
+        anchor("center"),
+    ]);
+
+    add([
+        text(`Score: ${Math.floor(score/10)}`, { size: 32 }),
+        pos(width()/2, height()/2 + 20),
+        anchor("center"),
+    ]);
+
+    add([
+        text("Press SPACE to restart", { size: 24 }),
+        pos(width()/2, height()/2 + 80),
+        anchor("center"),
+    ]);
+
+    onKeyPress("space", () => {
+        go("game");
+    });
+});
+
+// Start with the start menu
+go("start");

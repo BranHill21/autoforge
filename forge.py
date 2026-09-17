@@ -18,7 +18,7 @@ PORTAL_PORT = "5173"
 # Initialize Gemini Client
 client = genai.Client()
 
-def generate_with_retry(prompt, retries=5, delay=15):
+def generate_with_retry(prompt, retries=10, delay=15):
     """Generates content with automatic backoff for 503 Server Unavailable errors."""
     for attempt in range(retries):
         try:
@@ -164,7 +164,7 @@ def run_pipeline(interactive=False):
     # PHASE 3: AUTOMATED QA & SELF-HEALING LOOP
     if state["status"] == "LOCAL_QA":
         print("🤖 Running Headless Browser Tests...")
-        max_qa_retries = 3
+        max_qa_retries = 10
         qa_passed = False
         
         for qa_attempt in range(max_qa_retries):
