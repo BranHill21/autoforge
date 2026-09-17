@@ -131,7 +131,7 @@ def run_pipeline(interactive=False):
     if state["status"] == "CODE_GEN":
         print("⚙️ Writing Kaboom.js Code...")
         game_concept = state.get("concept", state["game_name"])
-        prompt = f"Write a complete, single-file Kaboom.js game based on this concept:\n\n'{game_concept}'\n\nCRITICAL REQUIREMENTS:\n1. The game must be fully visualized and implemented.\n2. You must include a Start Menu, a Game Over screen, and Score tracking.\n3. Include an on-screen instructions overlay or text.\n4. Ensure all controls are fully functional and error-free.\n5. Import kaboom at the top using `import kaboom from 'kaboom';`. Initialize it with `kaboom();`.\nOutput ONLY the raw javascript code, no markdown, no explanations."
+        prompt = f"Write a complete, single-file Kaboom.js game based on this concept:\n\n'{game_concept}'\n\nCRITICAL REQUIREMENTS:\n1. The game must be fully visualized and implemented.\n2. You must include a Start Menu, a Game Over screen, and Score tracking.\n3. Include an on-screen instructions overlay or text.\n4. Ensure all controls are fully functional and error-free.\n5. Import kaboom at the top using `import kaboom from 'kaboom';`. Initialize it with `kaboom({{ width: 800, height: 600, letterbox: true }});` so it scales correctly on itch.io.\nOutput ONLY the raw javascript code, no markdown, no explanations."
         
         raw_output = generate_with_ollama(prompt)
         clean_code = extract_js(raw_output)
@@ -149,7 +149,7 @@ def run_pipeline(interactive=False):
         with open("game-template/main.js", "r") as f:
             current_code = f.read()
             
-        review_prompt = f"Please review this Kaboom.js game code for any missing elements (like Start/Game Over menus, visual assets, or instructions), logic flaws, or potential runtime errors that could come up later. If you find issues, fix them and improve the code. The game must be 100% playable from start to finish. Ensure it includes `import kaboom from 'kaboom';` and `kaboom();`.\n\nCurrent Code:\n{current_code}\n\nOutput ONLY the improved raw javascript code."
+        review_prompt = f"Please review this Kaboom.js game code for any missing elements (like Start/Game Over menus, visual assets, or instructions), logic flaws, or potential runtime errors that could come up later. If you find issues, fix them and improve the code. The game must be 100% playable from start to finish. Ensure it includes `import kaboom from 'kaboom';` and `kaboom({{ width: 800, height: 600, letterbox: true }});`.\n\nCurrent Code:\n{current_code}\n\nOutput ONLY the improved raw javascript code."
         
         print("🔄 Applying improvements from review...")
         reviewed_output = generate_with_ollama(review_prompt)
@@ -180,7 +180,7 @@ def run_pipeline(interactive=False):
                 with open("game-template/main.js", "r") as f:
                     current_code = f.read()
                 
-                fix_prompt = f"The following Kaboom.js game code threw these errors in the browser console:\n\n{err_msg}\n\nHere is the current code:\n{current_code}\n\nPlease fix the errors and output the corrected full single-file javascript code. IMPORTANT: Retain all existing features, menus, instructions, and visual elements. Do not strip functionality while fixing errors. Ensure it includes `import kaboom from 'kaboom';` and `kaboom();`. Output ONLY the raw javascript code."
+                fix_prompt = f"The following Kaboom.js game code threw these errors in the browser console:\n\n{err_msg}\n\nHere is the current code:\n{current_code}\n\nPlease fix the errors and output the corrected full single-file javascript code. IMPORTANT: Retain all existing features, menus, instructions, and visual elements. Do not strip functionality while fixing errors. Ensure it includes `import kaboom from 'kaboom';` and `kaboom({{ width: 800, height: 600, letterbox: true }});`. Output ONLY the raw javascript code."
                 
                 raw_fixed_output = generate_with_ollama(fix_prompt)
                 clean_fixed_code = extract_js(raw_fixed_output)

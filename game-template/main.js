@@ -3,6 +3,7 @@ import kaboom from 'kaboom';
 kaboom({
   width: 800,
   height: 600,
+  letterbox: true,
   background: [ 10, 10, 20 ],
 });
 
