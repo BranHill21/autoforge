@@ -3,13 +3,16 @@ import sys
 import json
 import subprocess
 import time
+import re
 from google import genai
 from google.genai import errors
+from playwright.sync_api import sync_playwright
 
 # ==========================================
 # GLOBAL CONFIGURATION
 # ==========================================
 MODEL_NAME = 'gemini-3.8-flash'
+PORTAL_PORT = "5173"
 
 # Initialize Gemini Client
 client = genai.Client()
@@ -22,12 +25,17 @@ def generate_with_retry(prompt, retries=5, delay=15):
                 model=MODEL_NAME,
                 contents=prompt
             ).text
-        except errors.ServerError as e:
+        except errors.ServerError:
             print(f"⏳ Server busy (503). Retrying in {delay} seconds (Attempt {attempt + 1}/{retries})...")
             time.sleep(delay)
     
     print("❌ Server consistently busy. Exiting pipeline safely. Try again later.")
     sys.exit(1)
+
+def extract_js(text):
+    """Safely extracts raw JavaScript from LLM markdown output."""
+    match = re.search(r"```(?:javascript|js)?\n(.*?)\n```", text, re.DOTALL | re.IGNORECASE)
+    return match.group(1).strip() if match else text.strip()
 
 def load_state():
     if os.path.exists("state.json"):
@@ -36,6 +44,58 @@ def load_state():
 
 def save_state(state):
     with open("state.json", "w") as f: json.dump(state, f)
+
+def run_qa_test():
+    """Starts the dev server, runs the game in a headless browser, and catches errors."""
+    # Ensure dependencies are installed
+    if not os.path.exists("game-template/node_modules"):
+        print("📦 Installing Node dependencies...")
+        subprocess.run(["npm", "install"], cwd="game-template", stdout=subprocess.DEVNULL)
+
+    print("🌐 Starting local Vite dev server...")
+    # Start Vite on a strict port so it doesn't randomly change
+    server_process = subprocess.Popen(
+        ["npm", "run", "dev", "--", "--port", PORTAL_PORT, "--strictPort"],
+        cwd="game-template",
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL
+    )
+    time.sleep(3) # Give Vite time to boot
+
+    errors_found = []
+    
+    def log_console(msg):
+        # We only care about actual errors, not standard logs or Vite HMR warnings
+        if msg.type == "error" and "favicon" not in msg.text:
+            errors_found.append(msg.text)
+
+    def log_page_error(err):
+        errors_found.append(err.message)
+
+    try:
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=True)
+            page = browser.new_page()
+            
+            # Attach error listeners
+            page.on("console", log_console)
+            page.on("pageerror", log_page_error)
+            
+            # Navigate to the game and wait for 3 seconds to let game logic run
+            page.goto(f"http://localhost:{PORTAL_PORT}", timeout=10000)
+            page.wait_for_timeout(3000)
+            browser.close()
+    except Exception as e:
+        errors_found.append(str(e))
+    finally:
+        # Always kill the Vite server when done testing
+        server_process.terminate()
+        server_process.wait()
+
+    if not errors_found:
+        return True, ""
+    
+    return False, "\n".join(errors_found)
 
 def run_pipeline(interactive=False):
     state = load_state()
@@ -47,45 +107,72 @@ def run_pipeline(interactive=False):
         
         concept = generate_with_retry(prompt)
         
-        state["game_name"] = concept
+        state["game_name"] = concept.replace('"', '').strip()
         state["status"] = "CODE_GEN"
         save_state(state)
         
         if interactive:
-            input(f"\nConcept generated: {concept}\nPress Enter to approve or Ctrl+C to exit safely...")
+            input(f"\nConcept generated: {state['game_name']}\nPress Enter to approve or Ctrl+C to exit safely...")
 
     # PHASE 2: CODE GENERATION
     if state["status"] == "CODE_GEN":
         print("⚙️ Writing Kaboom.js Code...")
-        prompt = f"Write a complete, single-file Kaboom.js game based on this concept: {state['game_name']}. Only output the raw javascript code, no markdown."
+        # Note: We explicitly instruct the AI to use modern Kaboom syntax and module imports.
+        prompt = f"Write a complete, single-file Kaboom.js game based on this concept: '{state['game_name']}'. Import kaboom at the top using `import kaboom from 'kaboom';`. Initialize it with `kaboom();`. Output ONLY the raw javascript code, no markdown, no explanations."
         
-        code = generate_with_retry(prompt)
+        raw_output = generate_with_retry(prompt)
+        clean_code = extract_js(raw_output)
         
-        # Inject code into the Vite template
         os.makedirs("game-template", exist_ok=True)
         with open("game-template/main.js", "w") as f:
-            f.write(code.replace("```javascript", "").replace("```", ""))
+            f.write(clean_code)
             
         state["status"] = "LOCAL_QA"
         save_state(state)
 
-    # PHASE 3: AUTOMATED QA (The Self-Healing Loop)
+    # PHASE 3: AUTOMATED QA & SELF-HEALING LOOP
     if state["status"] == "LOCAL_QA":
         print("🤖 Running Headless Browser Tests...")
-        # (Playwright implementation goes here)
-        print("✅ QA Passed. Zero console errors.")
+        max_qa_retries = 3
+        qa_passed = False
         
-        state["status"] = "SDK_INJECTION"
-        save_state(state)
+        for qa_attempt in range(max_qa_retries):
+            passed, err_msg = run_qa_test()
+            
+            if passed:
+                qa_passed = True
+                break
+            else:
+                print(f"⚠️ QA Failed (Attempt {qa_attempt + 1}/{max_qa_retries}). Errors found:\n{err_msg}")
+                print("🔄 Asking AI to fix the code...")
+                
+                with open("game-template/main.js", "r") as f:
+                    current_code = f.read()
+                
+                fix_prompt = f"The following Kaboom.js game code threw these errors in the browser console:\n\n{err_msg}\n\nHere is the current code:\n{current_code}\n\nPlease fix the errors and output the corrected full single-file javascript code. Ensure it includes `import kaboom from 'kaboom';` and `kaboom();`. Output ONLY the raw javascript code."
+                
+                raw_fixed_output = generate_with_retry(fix_prompt)
+                clean_fixed_code = extract_js(raw_fixed_output)
+                
+                with open("game-template/main.js", "w") as f:
+                    f.write(clean_fixed_code)
+                    
+        if qa_passed:
+            print("✅ QA Passed. Zero console errors.")
+            state["status"] = "GITHUB_PUSH"
+            save_state(state)
+        else:
+            print("❌ QA Failed repeatedly. Exiting pipeline to allow manual inspection.")
+            sys.exit(1)
 
-    # PHASE 4: SDK INJECTION & DEPLOYMENT
-    if state["status"] == "SDK_INJECTION":
+    # PHASE 4: GITHUB DEPLOYMENT
+    if state["status"] == "GITHUB_PUSH":
         print("🚀 Pushing to GitHub for CI/CD Deployment...")
         subprocess.run(["git", "add", "."])
         
-        # Truncate commit message if game name is too long
-        commit_msg = f"Auto-Deploy: {state['game_name'][:40]}..."
-        subprocess.run(["git", "commit", "-m", commit_msg])
+        # Clean the commit message to prevent Git errors from weird characters
+        clean_name = re.sub(r'[^a-zA-Z0-9 ]', '', state['game_name'])[:40]
+        subprocess.run(["git", "commit", "-m", f"Auto-Deploy: {clean_name}..."])
         subprocess.run(["git", "push", "origin", "main"])
         
         # Reset state for the next game
@@ -94,6 +181,24 @@ def run_pipeline(interactive=False):
         print("🎉 Pipeline Complete!")
 
 if __name__ == "__main__":
-    # Checks if the user passed the '--auto' flag to run without manual confirmation
     is_interactive = "--auto" not in sys.argv
-    run_pipeline(interactive=is_interactive)
+    
+    # If the user passes --batch N, run it N times.
+    batch_count = 1
+    if "--batch" in sys.argv:
+        try:
+            idx = sys.argv.index("--batch")
+            batch_count = int(sys.argv[idx + 1])
+        except (ValueError, IndexError):
+            pass
+
+    for i in range(batch_count):
+        if batch_count > 1:
+            print(f"\n==========================================")
+            print(f"🎮 Starting Game {i + 1} of {batch_count}")
+            print(f"==========================================\n")
+        run_pipeline(interactive=is_interactive)
+        
+        # Give the system a brief moment to reset ports before looping
+        if i < batch_count - 1:
+            time.sleep(2)
