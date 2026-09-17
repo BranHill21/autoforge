@@ -4,7 +4,6 @@ import json
 import subprocess
 import time
 import re
-import ollama
 from google import genai
 from google.genai import errors
 from playwright.sync_api import sync_playwright
@@ -12,18 +11,19 @@ from playwright.sync_api import sync_playwright
 # ==========================================
 # GLOBAL CONFIGURATION
 # ==========================================
-MODEL_NAME = 'gemini-3.8-flash'
+MODEL_FLASH = 'gemini-1.5-flash'
+MODEL_PRO = 'gemini-1.5-pro'
 PORTAL_PORT = "5173"
 
 # Initialize Gemini Client
 client = genai.Client()
 
-def generate_with_retry(prompt, retries=10, delay=15):
+def generate_with_retry(prompt, model=MODEL_FLASH, retries=10, delay=15):
     """Generates content with automatic backoff for 503 Server Unavailable errors."""
     for attempt in range(retries):
         try:
             return client.models.generate_content(
-                model=MODEL_NAME,
+                model=model,
                 contents=prompt
             ).text
         except errors.ServerError:
@@ -32,16 +32,6 @@ def generate_with_retry(prompt, retries=10, delay=15):
     
     print("❌ Server consistently busy. Exiting pipeline safely. Try again later.")
     sys.exit(1)
-    
-def generate_with_ollama(prompt, model_name='qwen2.5-coder:7b'):
-    """Generates content using the local Ollama model."""
-    response = ollama.chat(model=model_name, messages=[
-        {
-            'role': 'user',
-            'content': prompt,
-        }
-    ])
-    return response['message']['content']
 
 def extract_js(text):
     """Safely extracts raw JavaScript from LLM markdown output."""
@@ -121,19 +111,40 @@ def run_pipeline(interactive=False):
         # Extract a short name for the git commit
         state["game_name"] = concept.split('\n')[0].replace('"', '').strip()[:40]
         state["concept"] = concept
-        state["status"] = "CODE_GEN"
+        state["status"] = "GDD_GEN"
         save_state(state)
         
         if interactive:
             input(f"\nConcept generated:\n{concept}\n\nPress Enter to approve or Ctrl+C to exit safely...")
 
+    # PHASE 1.5: GAME DESIGN DOCUMENT (GDD)
+    if state["status"] == "GDD_GEN":
+        print("📋 Generating Game Design Document (GDD)...")
+        gdd_prompt = f"You are a professional game designer. Expand this concept into a strict JSON Game Design Document:\n\n{state['concept']}\n\nThe JSON must include these keys:\n- 'core_loop': How the player plays.\n- 'juice': Mandatory visual/audio polish (particles, screen shake).\n- 'progression': How the game scales difficulty or unlocks.\n- 'ad_hooks': Where to trigger showInterstitialAd() and showRewardedAd().\n- 'assets': A list of required open-source Kenney.nl asset URLs.\n\nOutput ONLY valid JSON."
+        
+        gdd = generate_with_retry(gdd_prompt, model=MODEL_FLASH)
+        state["gdd"] = gdd
+        state["status"] = "CODE_GEN"
+        save_state(state)
+        
+        if interactive:
+            print(f"\nGDD Generated:\n{gdd}")
+            input("\nPress Enter to continue to Code Generation...")
+
     # PHASE 2: CODE GENERATION
     if state["status"] == "CODE_GEN":
-        print("⚙️ Writing Kaboom.js Code...")
-        game_concept = state.get("concept", state["game_name"])
-        prompt = f"Write a complete, single-file Kaboom.js game based on this concept:\n\n'{game_concept}'\n\nCRITICAL REQUIREMENTS:\n1. The game must be fully visualized and implemented.\n2. You must include a Start Menu, a Game Over screen, and Score tracking.\n3. Include an on-screen instructions overlay or text.\n4. Ensure all controls are fully functional and error-free.\n5. Import kaboom at the top using `import kaboom from 'kaboom';`. Initialize it with `kaboom({{ width: 800, height: 600, letterbox: true }});` so it scales correctly on itch.io.\nOutput ONLY the raw javascript code, no markdown, no explanations."
+        print("⚙️ Writing Kaboom.js Code (using Gemini Pro)...")
         
-        raw_output = generate_with_ollama(prompt)
+        try:
+            with open("kaboom_rules.md", "r") as f:
+                rules = f.read()
+        except FileNotFoundError:
+            rules = ""
+            
+        gdd = state.get("gdd", state.get("concept", state["game_name"]))
+        prompt = f"Write a complete, single-file Kaboom.js game based on this Game Design Document:\n\n{gdd}\n\nCRITICAL REQUIREMENTS:\n1. Follow the rules in this cheat sheet strictly:\n{rules}\n2. The game must be fully visualized using the requested Kenney.nl assets (load them via direct URLs).\n3. You must include a Start Menu, Game Over screen, Score tracking, and Instructions.\n4. Implement the Ad Hooks (`showInterstitialAd()`, `showRewardedAd()`) as placeholder console.log functions.\n5. Ensure all controls are fully functional and error-free. Initialize kaboom with `kaboom({{ width: 800, height: 600, letterbox: true }});` so it scales correctly on itch.io.\nOutput ONLY the raw javascript code, no markdown, no explanations."
+        
+        raw_output = generate_with_retry(prompt, model=MODEL_PRO)
         clean_code = extract_js(raw_output)
         
         os.makedirs("game-template", exist_ok=True)
@@ -152,7 +163,7 @@ def run_pipeline(interactive=False):
         review_prompt = f"Please review this Kaboom.js game code for any missing elements (like Start/Game Over menus, visual assets, or instructions), logic flaws, or potential runtime errors that could come up later. If you find issues, fix them and improve the code. The game must be 100% playable from start to finish. Ensure it includes `import kaboom from 'kaboom';` and `kaboom({{ width: 800, height: 600, letterbox: true }});`.\n\nCurrent Code:\n{current_code}\n\nOutput ONLY the improved raw javascript code."
         
         print("🔄 Applying improvements from review...")
-        reviewed_output = generate_with_ollama(review_prompt)
+        reviewed_output = generate_with_retry(review_prompt, model=MODEL_FLASH)
         clean_reviewed_code = extract_js(reviewed_output)
         
         with open("game-template/main.js", "w") as f:
@@ -182,7 +193,7 @@ def run_pipeline(interactive=False):
                 
                 fix_prompt = f"The following Kaboom.js game code threw these errors in the browser console:\n\n{err_msg}\n\nHere is the current code:\n{current_code}\n\nPlease fix the errors and output the corrected full single-file javascript code. IMPORTANT: Retain all existing features, menus, instructions, and visual elements. Do not strip functionality while fixing errors. Ensure it includes `import kaboom from 'kaboom';` and `kaboom({{ width: 800, height: 600, letterbox: true }});`. Output ONLY the raw javascript code."
                 
-                raw_fixed_output = generate_with_ollama(fix_prompt)
+                raw_fixed_output = generate_with_retry(fix_prompt, model=MODEL_FLASH)
                 clean_fixed_code = extract_js(raw_fixed_output)
                 
                 with open("game-template/main.js", "w") as f:
@@ -204,7 +215,7 @@ def run_pipeline(interactive=False):
             
         instructions_prompt = f"Read the following completed game code and write a short, engaging description and instructions manual suitable for an itch.io page. Include a brief summary, how to play, and controls.\n\nCode:\n{final_code}\n\nOutput only the text content for the instructions file."
         
-        instructions = generate_with_ollama(instructions_prompt)
+        instructions = generate_with_retry(instructions_prompt, model=MODEL_FLASH)
         
         with open("game-template/instructions.txt", "w") as f:
             f.write(instructions.strip())
