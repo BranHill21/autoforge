@@ -1,19 +1,26 @@
-# SUBTERRANEAN CLINIC
+# GLYPHSTACK
 
-## Summary
-Welcome to **Subterranean Clinic**, a high-stakes, cyberpunk medical management game where ethics are a luxury and survival depends on steady hands. Operating deep in the underground, your job is to manage illicit organ grafts, cater to desperate clientele, and keep your patients breathing while managing your bottom line. Move fast, satisfy your buyers, but watch out—every illegal procedure raises your **Police Heat**, and one wrong move means the authorities will shut your operation down permanently!
+### Stack glowing glyphs on the swaying pedestal!
 
----
+**GLYPHSTACK** is a sleek, physics-based stacking challenge set in a glowing neon void. Test your precision and timing as you drop an array of uniquely shaped and colored glyphs onto a constantly swaying pedestal. As your tower grows taller and you climb through higher tiers, the pedestal sways wider, unpredictable wind gusts push at your blocks, and a single mistake can send your masterpiece tumbling into the abyss! 
 
-## How to Play
-1. **Fulfill Client Demands:** Review the required organs for each patient on your operating table.
-2. **Harvest from the Vat:** Drag the correct biomatter and organs from the **Biomatter Vat** on the left and drop them onto their matching surgery slots on the right. 
-3. **Beat the Clock & Patient Stability:** Complete the grafts before the patient's stability hits 0% or the surgery timer runs out.
-4. **Manage Police Heat:** Successful surgeries increase your credits, reputation, and **Police Heat**. If your heat gets too high between shifts, it's game over! Use bribes if necessary to keep the authorities off your back.
-5. **Survive the Shifts:** Complete all clients in a shift to progress to harder, more lucrative contracts.
+Can you maintain your balance and build the ultimate cosmic tower, or will your stack collapse under pressure?
 
 ---
 
-## Controls
-* **Mouse / Touch:** Click and drag organs from the Biomatter Vat to the corresponding surgery slots on the Operating Table. Release to drop.
-* **Click / Tap:** Interact with menu buttons, start shifts, and trigger emergency bribes.
+### How to Play
+* **Position Your Drop:** Move your mouse left and right to align the crane over the pedestal.
+* **Rotate for Balance:** Use the rotation controls to angle your glyph so it fits snugly against the pieces below it.
+* **Stack Up:** Drop your glyphs carefully. Reaching higher elevation tiers increases your score multiplier, but beware—higher tiers introduce aggressive wind and heavier sway!
+* **Save the Stack:** In tight spots, you have a limited supply of **Micro-Nudge Shockwaves** to blast falling or slipping pieces back into the air. 
+* **Don't Let Them Fall:** If a dropped glyph falls off the screen or misses the platform, it's game over!
+
+---
+
+### Controls
+
+* **Mouse X** — Position Crane
+* **A / D or Left / Right Arrow Keys** — Rotate Glyph Counter-Clockwise / Clockwise
+* **Mouse Scroll Wheel** — Fine-tune Glyph Rotation
+* **Left Click / Spacebar** — Drop Glyph
+* **Right Click** — Trigger Micro-Nudge Shockwave (Limited uses per run)

@@ -1,13 +1,12 @@
 import kaboom from "kaboom";
 
 kaboom({
-    width: 1280,
-    height: 720,
+    width: 800,
+    height: 600,
     letterbox: true,
     background: [10, 10, 15],
 });
 
-// Ad hook globals
 window.showInterstitialAd = () => { console.log("Ad Placeholder: Interstitial Ad Shown"); };
 window.showRewardedAd = (rewardCallback) => { 
     console.log("Ad Placeholder: Rewarded Ad Shown"); 
@@ -15,461 +14,432 @@ window.showRewardedAd = (rewardCallback) => {
 };
 
 scene("menu", () => {
-    // CRT scanline / ambient background effect
     add([
-        rect(1280, 720),
-        color(15, 20, 25),
-        pos(0, 0),
-    ]);
-
-    // Title
-    add([
-        text("SUBTERRANEAN CLINIC", { size: 64 }),
-        pos(center().x, 150),
-        anchor("center"),
-        color(0, 255, 128),
+        rect(800, 600),
+        color(10, 10, 15),
+        fixed()
     ]);
 
     add([
-        text("Manage illicit organ grafts, satisfy clientele, evade the law.", { size: 24 }),
-        pos(center().x, 230),
+        text("GLYPHSTACK", { size: 52 }),
+        pos(400, 150),
         anchor("center"),
-        color(150, 200, 180),
+        color(0, 255, 200),
+        fixed()
     ]);
 
-    // Instructions box
     add([
-        rect(800, 200, { radius: 8 }),
-        pos(center().x, 370),
+        text("Stack glowing glyphs on the swaying pedestal!", { size: 18 }),
+        pos(400, 220),
         anchor("center"),
-        color(25, 35, 45),
+        color(200, 200, 220),
+        fixed()
+    ]);
+
+    const instructions = [
+        "A / D or Scroll: Rotate Glyph",
+        "Mouse X: Position Crane",
+        "Left Click / Space: Drop Glyph",
+        "Right Click: Micro-Nudge Shockwave"
+    ];
+
+    instructions.forEach((inst, idx) => {
+        add([
+            text(inst, { size: 14 }),
+            pos(400, 280 + idx * 25),
+            anchor("center"),
+            color(150, 150, 180),
+            fixed()
+        ]);
+    });
+
+    let inputReady = false;
+    wait(0.2, () => { inputReady = true; });
+
+    const btn = add([
+        rect(220, 50),
+        pos(400, 440),
+        anchor("center"),
         area(),
+        color(0, 200, 150),
+        fixed()
     ]);
+    btn.add([ text("START GAME", { size: 20 }), anchor("center"), color(10, 10, 15), fixed() ]);
 
-    add([
-        text("HOW TO PLAY:\n1. Drag organs from the Vat onto matching client surgery slots.\n2. Keep Patient Stability high & beat the timer.\n3. Avoid high Police Heat or it's game over!\n4. Use upgrades to unlock advanced gene-splicing.", { size: 18 }),
-        pos(center().x, 370),
-        anchor("center"),
-        color(200, 220, 210),
-    ]);
+    btn.onClick(() => {
+        if (!inputReady) return;
+        go("game", { score: 0, tier: 1 });
+    });
+    btn.onHoverUpdate(() => { btn.color = rgb(0, 255, 180); });
+    btn.onHoverEnd(() => { btn.color = rgb(0, 200, 150); });
+});
 
-    // Start Button
-    const startBtn = add([
-        rect(300, 60, { radius: 8 }),
-        pos(center().x, 530),
+scene("game", (data) => {
+    setGravity(1200);
+
+    let score = data.score || 0;
+    let tier = data.tier || 1;
+    let consecutiveFails = getData("consecutiveFails") || 0;
+    let microNudges = 2;
+
+    const colors = [
+        rgb(0, 255, 200), // Cyan
+        rgb(255, 0, 128), // Magenta
+        rgb(128, 255, 0), // Acid Lime
+        rgb(255, 180, 0)  // Amber
+    ];
+
+    const shapes = [
+        { w: 60, h: 30 },
+        { w: 40, h: 40 },
+        { w: 80, h: 20 },
+        { w: 50, h: 50 },
+        { w: 70, h: 25 }
+    ];
+
+    // Background stars/dust
+    for (let i = 0; i < 40; i++) {
+        add([
+            circle(rand(1, 2.5)),
+            pos(rand(0, 800), rand(0, 600)),
+            color(50, 50, 80),
+            fixed(),
+            z(-10)
+        ]);
+    }
+
+    // Pedestal
+    const pedestalX = 400;
+    const pedestalBaseY = 520;
+    let pedestalAngle = 0;
+    let pedestalTimer = 0;
+
+    const pedestal = add([
+        rect(160, 20),
+        pos(pedestalX, pedestalBaseY),
         anchor("center"),
-        color(0, 180, 90),
         area(),
+        body({ isStatic: true }),
+        color(40, 40, 60),
+        "pedestal"
     ]);
-    startBtn.add([
-        text("OPEN CLINIC", { size: 28 }),
+    pedestal.add([
+        rect(160, 4),
+        pos(0, -10),
         anchor("center"),
-        color(255, 255, 255),
+        color(0, 255, 200)
+    ]);
+
+    // Support pole visual
+    add([
+        rect(20, 80),
+        pos(pedestalX, pedestalBaseY + 50),
+        anchor("center"),
+        color(30, 30, 45),
+        z(-1)
+    ]);
+
+    // UI
+    const scoreLabel = add([
+        text("SCORE: " + score, { size: 20 }),
+        pos(24, 24),
+        fixed(),
+        z(100)
+    ]);
+
+    const nudgeLabel = add([
+        text("MICRO-NUDGES: " + microNudges + " (Right Click)", { size: 14 }),
+        pos(24, 55),
+        fixed(),
+        z(100)
+    ]);
+
+    const tierLabel = add([
+        text("TIER: " + tier, { size: 16 }),
+        pos(776, 24),
+        anchor("topright"),
+        fixed(),
+        z(100)
     ]);
 
     let inputReady = false;
     wait(0.2, () => { inputReady = true; });
 
-    startBtn.onClick(() => {
-        if (!inputReady) return;
-        go("game", { credits: 100, heat: 0, reputation: 10, shift: 1 });
-    });
-    
-    startBtn.onHoverUpdate(() => {
-        startBtn.color = rgb(0, 220, 110);
-    });
-    startBtn.onHoverEnd(() => {
-        startBtn.color = rgb(0, 180, 90);
-    });
-});
+    let currentGlyph = null;
+    let craneX = 400;
+    let craneAngle = 0;
+    let isSpawning = false;
+    let isGameOver = false;
 
-scene("game", (data) => {
-    // Game State
-    let credits = data.credits || 100;
-    let heat = data.heat || 0;
-    let reputation = data.reputation || 10;
-    let shift = data.shift || 1;
-    let clientsServed = 0;
-    let maxClientsPerShift = 5;
+    function spawnGlyph() {
+        if (isGameOver) return;
+        isSpawning = true;
+        const shapeDef = shapes[Math.floor(rand(0, shapes.length))];
+        const col = colors[Math.floor(rand(0, colors.length))];
 
-    // Background clinic theme
-    add([
-        rect(1280, 720),
-        color(20, 15, 25),
-        pos(0, 0),
-    ]);
-
-    // HUD Header
-    add([
-        rect(1280, 60),
-        color(10, 10, 15),
-        pos(0, 0),
-        fixed(),
-        z(100),
-    ]);
-
-    add([
-        text(`Credits: $${credits}`, { size: 22 }),
-        pos(30, 20),
-        fixed(),
-        z(101),
-        color(0, 255, 120),
-    ]);
-
-    const heatLabel = add([
-        text(`Police Heat: ${heat}%`, { size: 22 }),
-        pos(300, 20),
-        fixed(),
-        z(101),
-        color(255, 80, 80),
-    ]);
-
-    add([
-        text(`Reputation: ${reputation}`, { size: 22 }),
-        pos(600, 20),
-        fixed(),
-        z(101),
-        color(220, 220, 100),
-    ]);
-
-    add([
-        text(`Shift: ${shift} | Client: ${clientsServed + 1}/${maxClientsPerShift}`, { size: 22 }),
-        pos(900, 20),
-        fixed(),
-        z(101),
-        color(100, 200, 255),
-    ]);
-
-    // Vat / Inventory Area (Left side)
-    add([
-        rect(380, 600, { radius: 10 }),
-        pos(40, 90),
-        color(30, 40, 50),
-        area(),
-    ]);
-    add([
-        text("BIOMATTER VAT", { size: 20 }),
-        pos(60, 110),
-        color(150, 200, 220),
-        fixed(),
-        z(10),
-    ]);
-
-    // Operating Table Area (Right side)
-    add([
-        rect(800, 600, { radius: 10 }),
-        pos(450, 90),
-        color(25, 30, 35),
-        area(),
-    ]);
-    add([
-        text("OPERATING TABLE", { size: 20 }),
-        pos(470, 110),
-        color(220, 150, 150),
-        fixed(),
-        z(10),
-    ]);
-
-    // Patient & Requirements State
-    let patientStability = 100;
-    let surgeryTimeLeft = 30; // 30 seconds per client
-    let requiredOrgans = ["Heart", "Liver", "Kidney"];
-    if (shift >= 2) requiredOrgans.push("Synthetic Core");
-
-    let placedOrgans = {};
-    let roundEnded = false;
-
-    // Stability & Timer bar UI
-    add([
-        rect(400, 24, { radius: 4 }),
-        pos(480, 150),
-        color(50, 20, 20),
-    ]);
-    const stabilityBar = add([
-        rect(400, 24, { radius: 4 }),
-        pos(480, 150),
-        color(255, 60, 60),
-    ]);
-    const stabilityText = add([
-        text("Stability: 100%", { size: 16 }),
-        pos(490, 154),
-        z(10),
-        color(255, 255, 255),
-    ]);
-
-    const timerText = add([
-        text("Time: 30.0s", { size: 20 }),
-        pos(1000, 150),
-        color(255, 255, 200),
-    ]);
-
-    // Client Demand Text
-    let demandStr = "Client Demands:\n" + requiredOrgans.map(o => ` - ${o}`).join("\n");
-    add([
-        text(demandStr, { size: 18 }),
-        pos(480, 200),
-        color(200, 220, 220),
-    ]);
-
-    // Surgery Slots UI
-    requiredOrgans.forEach((org, idx) => {
-        let slotPos = vec2(500 + (idx % 2) * 360, 340 + Math.floor(idx / 2) * 120);
-
-        add([
-            rect(340, 100, { radius: 8 }),
-            pos(slotPos),
-            color(40, 50, 60),
+        currentGlyph = add([
+            rect(shapeDef.w, shapeDef.h),
+            pos(craneX, 100),
+            anchor("center"),
             area(),
-            "surgery_slot",
-            { targetOrgan: org, filled: false }
+            body({ mass: 2 }),
+            rotate(0),
+            color(col),
+            "glyph",
+            { isDropped: false, blockColor: col }
         ]);
 
+        currentGlyph.add([
+            rect(shapeDef.w - 8, shapeDef.h - 8),
+            pos(0, 0),
+            anchor("center"),
+            color(10, 10, 15)
+        ]);
+
+        currentGlyph.add([
+            text(String.fromCharCode(65 + Math.floor(rand(0, 26))), { size: 14 }),
+            pos(0, 0),
+            anchor("center"),
+            color(col)
+        ]);
+        isSpawning = false;
+    }
+
+    spawnGlyph();
+
+    onMousePress("right", () => {
+        if (!inputReady || microNudges <= 0 || isGameOver) return;
+        microNudges--;
+        nudgeLabel.text = "MICRO-NUDGES: " + microNudges + " (Right Click)";
+
+        // Shockwave pulse
         add([
-            text(`Slot: ${org}`, { size: 16 }),
-            pos(slotPos.x + 15, slotPos.y + 15),
-            color(150, 170, 180),
-            z(5),
-        ]);
-    });
-
-    // Spawn Organ Items in Vat - ENSURE ALL REQUIRED ORGANS ARE GUARANTEED TO SPAWN
-    let vatItems = [];
-
-    function spawnVatOrgan(name, index) {
-        let posVec = vec2(70 + (index % 2) * 170, 160 + Math.floor(index / 2) * 90);
-        let organObj = add([
-            rect(150, 70, { radius: 6 }),
-            pos(posVec),
-            color(70, 110, 90),
-            area(),
-            anchor("topleft"),
-            "vat_organ",
-            { organName: name, originalPos: posVec, isDragging: false }
-        ]);
-
-        organObj.add([
-            text(name, { size: 14 }),
-            pos(10, 10),
-            color(255, 255, 255),
-        ]);
-
-        vatItems.push(organObj);
-    }
-
-    // Fixed Pool generation: Guarantee required organs are present in the vat so the round is never unwinnable
-    let availableOrgansInVat = [...requiredOrgans, "Lung", "Neural Node"];
-    // Ensure we fill up to 6 slots securely without exceeding grid size
-    while(availableOrgansInVat.length < 6) {
-        availableOrgansInVat.push("Kidney");
-    }
-
-    for (let i = 0; i < 6; i++) {
-        let name = availableOrgansInVat[i];
-        spawnVatOrgan(name, i);
-    }
-
-    // Drag and Drop Logic
-    let activeDragItem = null;
-
-    onMousePress(() => {
-        if (roundEnded) return;
-        let mPos = mousePos();
-        for (let item of vatItems) {
-            if (!item.exists()) continue;
-            if (item.hasPoint(mPos)) {
-                activeDragItem = item;
-                item.isDragging = true;
-                break;
+            circle(10),
+            pos(pedestalX, pedestalBaseY),
+            anchor("center"),
+            color(0, 255, 200),
+            opacity(0.8),
+            lifespan(0.4, { fade: 0.1 }),
+            scale(1),
+            {
+                update() {
+                    this.scale = this.scale.add(vec2(dt() * 15, dt() * 15));
+                }
             }
-        }
+        ]);
+
+        get("glyph").forEach(g => {
+            if (g.exists() && g.isDropped) {
+                if (typeof g.applyImpulse === "function") {
+                    g.applyImpulse(vec2(rand(-150, 150), -300));
+                } else if (typeof g.addForce === "function") {
+                    g.addForce(vec2(rand(-150, 150), -3000));
+                }
+            }
+        });
     });
 
     onUpdate(() => {
-        if (roundEnded) return;
+        if (!inputReady || isGameOver) return;
 
-        if (activeDragItem && activeDragItem.exists()) {
-            let mPos = mousePos();
-            activeDragItem.pos = mPos;
+        // Pedestal sway escalation
+        pedestalTimer += dt() * (1 + tier * 0.2);
+        const swayFreq = 1.5 + tier * 0.3;
+        const swayAmp = 15 + tier * 8;
+        pedestalAngle = Math.sin(pedestalTimer * swayFreq) * swayAmp;
+        pedestal.angle = pedestalAngle;
+
+        // Wind gusts at higher tiers
+        if (tier >= 2) {
+            const wind = Math.sin(time() * 2) * (tier * 25);
+            get("glyph").forEach(g => {
+                if (g.exists() && g.isDropped) {
+                    if (typeof g.addForce === "function") {
+                        g.addForce(vec2(wind, 0));
+                    }
+                }
+            });
         }
 
-        // Timer decrement
-        surgeryTimeLeft -= dt();
-        timerText.text = `Time: ${Math.max(0, surgeryTimeLeft).toFixed(1)}s`;
+        // Crane movement
+        const mPos = mousePos();
+        craneX = clamp(mPos.x, 100, 700);
 
-        // Patient stability decay based on time & missing organs
-        patientStability -= dt() * 1.5;
-        if (patientStability < 0) patientStability = 0;
+        if (currentGlyph && !currentGlyph.isDropped && currentGlyph.exists()) {
+            craneAngle += (craneX - currentGlyph.pos.x) * 0.05;
+            craneAngle = clamp(craneAngle, -30, 30);
+            craneAngle *= 0.9; // damp
 
-        stabilityBar.width = Math.max(0, (patientStability / 100) * 400);
-        stabilityText.text = `Stability: ${Math.floor(patientStability)}%`;
+            currentGlyph.pos.x = craneX + Math.sin(time() * 4) * 20;
+            currentGlyph.pos.y = 100 + Math.cos(time() * 2) * 5;
+            currentGlyph.angle = craneAngle;
 
-        if (patientStability <= 0 || surgeryTimeLeft <= 0) {
-            roundEnded = true;
-            go("gameover", { reason: "Patient Flatlined / Critical Failure", credits, heat, reputation, shift });
+            if (isKeyDown("a") || isKeyDown("left")) currentGlyph.angle -= 90 * dt();
+            if (isKeyDown("d") || isKeyDown("right")) currentGlyph.angle += 90 * dt();
         }
     });
 
-    onMouseRelease(() => {
-        if (roundEnded || !activeDragItem || !activeDragItem.exists()) return;
+    onScroll((delta) => {
+        if (currentGlyph && !currentGlyph.isDropped && currentGlyph.exists()) {
+            currentGlyph.angle += delta.y * 0.2;
+        }
+    });
 
-        let droppedOnValidSlot = false;
-        let mPos = mousePos();
+    onMousePress("left", () => {
+        dropGlyph();
+    });
 
-        let slots = get("surgery_slot");
-        for (let slot of slots) {
-            if (slot.hasPoint(mPos)) {
-                if (activeDragItem.organName === slot.targetOrgan && !slot.filled) {
-                    slot.filled = true;
-                    droppedOnValidSlot = true;
+    onKeyPress("space", () => {
+        dropGlyph();
+    });
 
-                    slot.color = rgb(40, 120, 60);
-                    slot.add([
-                        text("GRAFTED", { size: 16 }),
-                        pos(20, 40),
-                        color(100, 255, 150),
-                        z(10),
-                    ]);
+    function dropGlyph() {
+        if (!inputReady || !currentGlyph || currentGlyph.isDropped || !currentGlyph.exists() || isSpawning || isGameOver) return;
 
-                    placedOrgans[slot.targetOrgan] = true;
-                    destroy(activeDragItem);
-                    
-                    let allDone = requiredOrgans.every(o => placedOrgans[o]);
-                    if (allDone) {
-                        roundEnded = true;
-                        let earned = 150 + shift * 25;
-                        credits += earned;
-                        reputation += 3;
-                        heat += 8;
+        currentGlyph.isDropped = true;
+        score += 10 * tier;
+        scoreLabel.text = "SCORE: " + score;
 
-                        wait(0.8, () => {
-                            clientsServed++;
-                            if (clientsServed >= maxClientsPerShift) {
-                                window.showInterstitialAd();
-                                go("shift_summary", { credits, heat, reputation, shift: shift + 1 });
-                            } else {
-                                go("game", { credits, heat, reputation, shift });
-                            }
-                        });
+        // Particle burst
+        for (let i = 0; i < 8; i++) {
+            add([
+                circle(rand(2, 4)),
+                pos(currentGlyph.pos),
+                anchor("center"),
+                color(currentGlyph.blockColor),
+                move(rand(0, 360), rand(50, 150)),
+                lifespan(0.4, { fade: 0.2 }),
+                scale(1),
+                {
+                    update() {
+                        this.scale = this.scale.sub(vec2(dt() * 2, dt() * 2));
                     }
-                    break;
+                }
+            ]);
+        }
+
+        wait(1.0, () => {
+            if (!isGameOver) {
+                spawnGlyph();
+            }
+        });
+    }
+
+    // Check bounds & game over conditions
+    onUpdate(() => {
+        if (isGameOver) return;
+        
+        get("glyph").forEach(g => {
+            if (!g.exists()) return;
+
+            // Fall off screen
+            if (g.pos.y > 650 || g.pos.x < -100 || g.pos.x > 900) {
+                if (g.isDropped) {
+                    destroy(g);
+                    triggerGameOver();
+                } else {
+                    destroy(g);
                 }
             }
-        }
 
-        if (!droppedOnValidSlot) {
-            activeDragItem.pos = activeDragItem.originalPos;
-        }
-
-        activeDragItem.isDragging = false;
-        activeDragItem = null;
-    });
-
-    // Emergency Bribe / Rewarded Ad Button to lower heat
-    const bribeBtn = add([
-        rect(220, 40, { radius: 6 }),
-        pos(1020, 650),
-        color(180, 120, 40),
-        area(),
-        fixed(),
-        z(150),
-    ]);
-    bribeBtn.add([text("Bribe Inspector (Ad)", { size: 14 }), pos(15, 12), color(255,255,255)]);
-
-    bribeBtn.onClick(() => {
-        if (roundEnded) return;
-        window.showRewardedAd(() => {
-            heat = Math.max(0, heat - 35);
-            heatLabel.text = `Police Heat: ${heat}%`;
+            // Tower height progression check
+            if (g.isDropped && g.pos.y < 350 && tier === 1) {
+                tier = 2;
+                tierLabel.text = "TIER: 2";
+            }
+            if (g.isDropped && g.pos.y < 200 && tier === 2) {
+                tier = 3;
+                tierLabel.text = "TIER: 3";
+            }
         });
     });
-});
 
-scene("shift_summary", (data) => {
-    add([
-        rect(1280, 720),
-        color(15, 25, 20),
-        pos(0, 0),
-    ]);
+    function triggerGameOver() {
+        if (isGameOver) return;
+        isGameOver = true;
 
-    add([
-        text(`SHIFT ${data.shift - 1} COMPLETED`, { size: 48 }),
-        pos(center().x, 150),
-        anchor("center"),
-        color(0, 255, 150),
-    ]);
+        consecutiveFails++;
+        setData("consecutiveFails", consecutiveFails);
 
-    add([
-        text(`Credits Acquired: $${data.credits}\nReputation: ${data.reputation}\nPolice Heat: ${data.heat}%`, { size: 24 }),
-        pos(center().x, 280),
-        anchor("center"),
-        color(200, 220, 210),
-    ]);
-
-    const nextBtn = add([
-        rect(300, 60, { radius: 8 }),
-        pos(center().x, 480),
-        anchor("center"),
-        color(0, 180, 90),
-        area(),
-    ]);
-    nextBtn.add([text("START NEXT SHIFT", { size: 22 }), anchor("center"), color(255, 255, 255)]);
-
-    nextBtn.onClick(() => {
-        if (data.heat >= 100) {
-            go("gameover", { reason: "Police Raid! Clinic Shut Down.", credits: data.credits, heat: data.heat, reputation: data.reputation, shift: data.shift });
-        } else {
-            go("game", { credits: data.credits, heat: data.heat, reputation: data.reputation, shift: data.shift });
+        if (consecutiveFails >= 3) {
+            window.showInterstitialAd();
+            setData("consecutiveFails", 0);
         }
-    });
+
+        go("gameover", { score: score });
+    }
 });
 
 scene("gameover", (data) => {
-    window.showInterstitialAd();
-
     add([
-        rect(1280, 720),
-        color(30, 10, 10),
-        pos(0, 0),
+        rect(800, 600),
+        color(10, 10, 15),
+        fixed()
     ]);
 
     add([
-        text("DISPOSED OF (GAME OVER)", { size: 52 }),
-        pos(center().x, 150),
+        text("TOWER COLLAPSED", { size: 40 }),
+        pos(400, 180),
         anchor("center"),
-        color(255, 60, 60),
+        color(255, 50, 100),
+        fixed()
     ]);
 
     add([
-        text(`Reason: ${data.reason}\nFinal Credits: $${data.credits}\nShift Reached: ${data.shift}`, { size: 24 }),
-        pos(center().x, 280),
+        text("Final Score: " + data.score, { size: 24 }),
+        pos(400, 250),
         anchor("center"),
-        color(220, 180, 180),
+        color(200, 200, 220),
+        fixed()
     ]);
 
-    // Legacy Prestige button
-    const prestigeBtn = add([
-        rect(350, 60, { radius: 8 }),
-        pos(center().x, 440),
+    let inputReady = false;
+    wait(0.3, () => { inputReady = true; });
+
+    const retryBtn = add([
+        rect(220, 50),
+        pos(400, 360),
         anchor("center"),
-        color(140, 60, 180),
         area(),
+        color(0, 200, 150),
+        fixed()
     ]);
-    prestigeBtn.add([text("HARVEST BRAIN (PRESTIGE)", { size: 20 }), anchor("center"), color(255, 255, 255)]);
+    retryBtn.add([ text("RETRY", { size: 20 }), anchor("center"), color(10, 10, 15), fixed() ]);
 
-    prestigeBtn.onClick(() => {
-        go("menu");
+    retryBtn.onClick(() => {
+        if (!inputReady) return;
+        go("game", { score: 0, tier: 1 });
+    });
+
+    const reviveBtn = add([
+        rect(220, 50),
+        pos(400, 430),
+        anchor("center"),
+        area(),
+        color(150, 0, 200),
+        fixed()
+    ]);
+    reviveBtn.add([ text("WATCH AD TO REVIVE", { size: 16 }), anchor("center"), color(255, 255, 255), fixed() ]);
+
+    reviveBtn.onClick(() => {
+        if (!inputReady) return;
+        window.showRewardedAd(() => {
+            go("game", { score: data.score, tier: 1 });
+        });
     });
 
     const menuBtn = add([
-        rect(300, 50, { radius: 8 }),
-        pos(center().x, 530),
+        rect(220, 40),
+        pos(400, 500),
         anchor("center"),
-        color(80, 80, 90),
         area(),
+        color(50, 50, 70),
+        fixed()
     ]);
-    menuBtn.add([text("Main Menu", { size: 20 }), anchor("center"), color(255, 255, 255)]);
+    menuBtn.add([ text("MAIN MENU", { size: 16 }), anchor("center"), color(200, 200, 200), fixed() ]);
 
     menuBtn.onClick(() => {
+        if (!inputReady) return;
         go("menu");
     });
 });
