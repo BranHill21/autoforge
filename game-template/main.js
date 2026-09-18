@@ -824,7 +824,7 @@ scene("game", () => {
             let opacityVal = (i + 1) / e.trail.length * 0.22;
             let radiusVal = e.radius * (i + 1) / e.trail.length;
             drawCircle({
-                pos: e.trail[i],
+                pos: e.trail[i].sub(e.pos),
                 radius: radiusVal,
                 color: e.color,
                 opacity: opacityVal,

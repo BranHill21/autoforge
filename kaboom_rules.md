@@ -113,3 +113,7 @@ window.showRewardedAd = (rewardCallback) => {
 In Kaboom v3000, passing a bare object like `{ radius: 10 }` into `add([])` registers it as a custom component that assigns a `.radius` property to the entity.
 **CRITICAL:** If you are also using a built-in component that defines the same property (e.g., `circle(10)` which already defines `.radius`), Kaboom will crash with a "duplicate component property" error. 
 Do NOT define properties in a custom component object that share a name with properties provided by built-in components like `rect()` or `circle()`. If you need to store custom data, use distinct names (e.g., `{ elemRadius: 10 }`).
+
+## Custom Drawing & Coordinate Space
+When you use `onDraw("tag", (e) => { ... })` or a component's `draw()` method, the drawing context is **relative to the entity's position**.
+**CRITICAL:** `pos: vec2(0,0)` inside `drawCircle()` or `drawRect()` will draw exactly at the entity's current location. If you want to draw something at a global coordinate (for example, rendering a trail of previous global positions stored in an array), you MUST subtract the entity's position: `pos: globalPos.sub(e.pos)`. Failure to do this will cause the drawing to be offset by the entity's position twice.
