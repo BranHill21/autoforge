@@ -1,26 +1,27 @@
-# GLYPHSTACK
+# TEMPORAL COURIER
 
-### Stack glowing glyphs on the swaying pedestal!
-
-**GLYPHSTACK** is a sleek, physics-based stacking challenge set in a glowing neon void. Test your precision and timing as you drop an array of uniquely shaped and colored glyphs onto a constantly swaying pedestal. As your tower grows taller and you climb through higher tiers, the pedestal sways wider, unpredictable wind gusts push at your blocks, and a single mistake can send your masterpiece tumbling into the abyss! 
-
-Can you maintain your balance and build the ultimate cosmic tower, or will your stack collapse under pressure?
+**Draw splines. Deliver packages. Leave Echoes behind.**
 
 ---
 
-### How to Play
-* **Position Your Drop:** Move your mouse left and right to align the crane over the pedestal.
-* **Rotate for Balance:** Use the rotation controls to angle your glyph so it fits snugly against the pieces below it.
-* **Stack Up:** Drop your glyphs carefully. Reaching higher elevation tiers increases your score multiplier, but beware—higher tiers introduce aggressive wind and heavier sway!
-* **Save the Stack:** In tight spots, you have a limited supply of **Micro-Nudge Shockwaves** to blast falling or slipping pieces back into the air. 
-* **Don't Let Them Fall:** If a dropped glyph falls off the screen or misses the platform, it's game over!
+### BRIEF SUMMARY
+Step into a retro-futuristic wireframe dimension where time is your greatest asset and your most dangerous obstacle. As a Temporal Courier, your mission is to navigate high-risk sectors and deliver packages to the green portal. You have a 15-second time loop to analyze lethal hazards and plot a safe course. 
+
+When your courier meets an untimely demise—or when you bake your run early—your past actions crystallize into solid **Echoes**. Use these temporal clones as stepping stones and weight-triggers to bypass security doors, survive escalating sectors, and secure your delivery!
 
 ---
 
-### Controls
+### HOW TO PLAY
+1. **Analyze:** Study the sector hazards (lasers and moving barriers) and locate the green **GATE** portal.
+2. **Draw:** Click and drag your Mouse during the 15-second setup phase to draw a custom spline path for your courier to follow.
+3. **Execute:** Watch your courier trace the path. Avoid running into hazards!
+4. **Iterate:** Every time you crash or finish a run, your path is "baked" into a physical Echo. Use past Echoes to block hazards, trigger switches, and reach previously inaccessible areas.
+5. **Progress:** Reach the green Portal before time collapses to advance to the next, increasingly challenging Sector!
 
-* **Mouse X** — Position Crane
-* **A / D or Left / Right Arrow Keys** — Rotate Glyph Counter-Clockwise / Clockwise
-* **Mouse Scroll Wheel** — Fine-tune Glyph Rotation
-* **Left Click / Spacebar** — Drop Glyph
-* **Right Click** — Trigger Micro-Nudge Shockwave (Limited uses per run)
+---
+
+### CONTROLS
+
+* **Hold Left Mouse Button & Drag:** Draw your custom movement path.
+* **Spacebar:** Bake current path / Force execution phase early & reset.
+* **R Key:** Instant Reset / Restart current sector.

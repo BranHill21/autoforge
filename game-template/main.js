@@ -1,10 +1,10 @@
 import kaboom from "kaboom";
 
 kaboom({
-    width: 800,
-    height: 600,
+    width: 1280,
+    height: 720,
     letterbox: true,
-    background: [10, 10, 15],
+    background: [10, 10, 18],
 });
 
 window.showInterstitialAd = () => { console.log("Ad Placeholder: Interstitial Ad Shown"); };
@@ -15,432 +15,411 @@ window.showRewardedAd = (rewardCallback) => {
 
 scene("menu", () => {
     add([
-        rect(800, 600),
-        color(10, 10, 15),
-        fixed()
+        rect(1280, 720),
+        color(10, 10, 18),
+    ]);
+
+    // Grid lines for neon wireframe look
+    for(let i=0; i<1280; i+=80) {
+        add([rect(1, 720), pos(i, 0), color(0, 255, 255), opacity(0.05)]);
+    }
+    for(let j=0; j<720; j+=80) {
+        add([rect(1280, 1), pos(0, j), color(0, 255, 255), opacity(0.05)]);
+    }
+
+    add([
+        text("TEMPORAL COURIER", { size: 64 }),
+        pos(center().x, 150),
+        anchor("center"),
+        color(0, 255, 255),
     ]);
 
     add([
-        text("GLYPHSTACK", { size: 52 }),
-        pos(400, 150),
+        text("Draw splines. Deliver packages. Leave Echoes behind.", { size: 24 }),
+        pos(center().x, 230),
         anchor("center"),
-        color(0, 255, 200),
-        fixed()
+        color(255, 0, 128),
     ]);
 
-    add([
-        text("Stack glowing glyphs on the swaying pedestal!", { size: 18 }),
-        pos(400, 220),
+    // Instructions Box
+    let instBox = add([
+        rect(800, 260, { radius: 8 }),
+        pos(center().x, 420),
         anchor("center"),
-        color(200, 200, 220),
-        fixed()
+        color(20, 20, 35),
+        area(),
+        outline(2, rgb(0, 255, 255))
     ]);
 
-    const instructions = [
-        "A / D or Scroll: Rotate Glyph",
-        "Mouse X: Position Crane",
-        "Left Click / Space: Drop Glyph",
-        "Right Click: Micro-Nudge Shockwave"
-    ];
+    instBox.add([
+        text(
+            "RULES OF OPERATION:\n\n" +
+            "1. 15-second loop: Analyze hazards & draw path with Mouse (hold & drag).\n" +
+            "2. Courier executes path. Avoid lasers & turrets.\n" +
+            "3. Death / Spacebar: Bakes run into a solid Echo.\n" +
+            "4. Use Echoes as stepping stones and weight-triggers.\n" +
+            "5. Reach the green Portal before shifts collapse!",
+            { size: 18, width: 760 }
+        ),
+        pos(0, 0),
+        anchor("center"),
+        color(200, 200, 220)
+    ]);
 
-    instructions.forEach((inst, idx) => {
-        add([
-            text(inst, { size: 14 }),
-            pos(400, 280 + idx * 25),
-            anchor("center"),
-            color(150, 150, 180),
-            fixed()
-        ]);
-    });
+    let startBtn = add([
+        rect(240, 60, { radius: 6 }),
+        pos(center().x, 620),
+        anchor("center"),
+        color(0, 255, 128),
+        area(),
+    ]);
+    startBtn.add([text("INITIATE SHIFT", { size: 22 }), anchor("center"), color(0, 0, 0)]);
 
     let inputReady = false;
     wait(0.2, () => { inputReady = true; });
 
-    const btn = add([
-        rect(220, 50),
-        pos(400, 440),
-        anchor("center"),
-        area(),
-        color(0, 200, 150),
-        fixed()
-    ]);
-    btn.add([ text("START GAME", { size: 20 }), anchor("center"), color(10, 10, 15), fixed() ]);
-
-    btn.onClick(() => {
+    startBtn.onClick(() => {
         if (!inputReady) return;
-        go("game", { score: 0, tier: 1 });
+        go("game", { sector: 1, echoes: [] });
     });
-    btn.onHoverUpdate(() => { btn.color = rgb(0, 255, 180); });
-    btn.onHoverEnd(() => { btn.color = rgb(0, 200, 150); });
 });
 
 scene("game", (data) => {
-    setGravity(1200);
+    let sector = data.sector || 1;
+    let echoesData = data.echoes || [];
+    let fails = data.fails || 0;
 
-    let score = data.score || 0;
-    let tier = data.tier || 1;
-    let consecutiveFails = getData("consecutiveFails") || 0;
-    let microNudges = 2;
+    setGravity(0);
 
-    const colors = [
-        rgb(0, 255, 200), // Cyan
-        rgb(255, 0, 128), // Magenta
-        rgb(128, 255, 0), // Acid Lime
-        rgb(255, 180, 0)  // Amber
-    ];
+    // Background aesthetic
+    add([rect(1280, 720), color(12, 12, 22)]);
+    for(let i=0; i<1280; i+=100) add([rect(1, 720), pos(i,0), color(0, 255, 255), opacity(0.03)]);
+    for(let j=0; j<720; j+=100) add([rect(1280, 1), pos(0,j), color(0, 255, 255), opacity(0.03)]);
 
-    const shapes = [
-        { w: 60, h: 30 },
-        { w: 40, h: 40 },
-        { w: 80, h: 20 },
-        { w: 50, h: 50 },
-        { w: 70, h: 25 }
-    ];
+    // HUD Elements
+    let sectorLabel = add([text(`SECTOR: ${sector}`, { size: 24 }), pos(30, 20), fixed(), z(100), color(0, 255, 255)]);
+    let timerLabel = add([text("TIME: 15.0s", { size: 24 }), pos(300, 20), fixed(), z(100), color(255, 180, 0)]);
+    let phaseLabel = add([text("PHASE: DRAW PATH", { size: 24 }), pos(600, 20), fixed(), z(100), color(255, 0, 128)]);
+    
+    add([text("[SPACE] Bake Echo & Reset | [R] Instant Reset", { size: 16 }), pos(30, 680), fixed(), z(100), color(100, 100, 140)]);
 
-    // Background stars/dust
-    for (let i = 0; i < 40; i++) {
-        add([
-            circle(rand(1, 2.5)),
-            pos(rand(0, 800), rand(0, 600)),
-            color(50, 50, 80),
-            fixed(),
-            z(-10)
-        ]);
+    let startPos = vec2(100, 360);
+    let portalPos = vec2(1180, 360);
+
+    let hazards = [];
+    let switches = [];
+    let doors = [];
+
+    if (sector >= 1) {
+        hazards.push({ pos: vec2(500, 150), size: vec2(40, 300), speed: 120, dir: 1, range: 200 });
+        hazards.push({ pos: vec2(800, 300), size: vec2(40, 300), speed: 150, dir: -1, range: 200 });
+    }
+    if (sector >= 5) {
+        hazards.push({ pos: vec2(300, 500), size: vec2(300, 40), speed: 100, dir: 1, range: 250 });
+    }
+    if (sector >= 10) {
+        switches.push({ pos: vec2(640, 620), pressed: false, id: 1 });
+        doors.push({ pos: vec2(640, 360), size: vec2(40, 200), open: false, id: 1 });
     }
 
-    // Pedestal
-    const pedestalX = 400;
-    const pedestalBaseY = 520;
-    let pedestalAngle = 0;
-    let pedestalTimer = 0;
-
-    const pedestal = add([
-        rect(160, 20),
-        pos(pedestalX, pedestalBaseY),
-        anchor("center"),
-        area(),
-        body({ isStatic: true }),
-        color(40, 40, 60),
-        "pedestal"
-    ]);
-    pedestal.add([
-        rect(160, 4),
-        pos(0, -10),
-        anchor("center"),
-        color(0, 255, 200)
-    ]);
-
-    // Support pole visual
-    add([
-        rect(20, 80),
-        pos(pedestalX, pedestalBaseY + 50),
-        anchor("center"),
-        color(30, 30, 45),
-        z(-1)
-    ]);
-
-    // UI
-    const scoreLabel = add([
-        text("SCORE: " + score, { size: 20 }),
-        pos(24, 24),
-        fixed(),
-        z(100)
-    ]);
-
-    const nudgeLabel = add([
-        text("MICRO-NUDGES: " + microNudges + " (Right Click)", { size: 14 }),
-        pos(24, 55),
-        fixed(),
-        z(100)
-    ]);
-
-    const tierLabel = add([
-        text("TIER: " + tier, { size: 16 }),
-        pos(776, 24),
-        anchor("topright"),
-        fixed(),
-        z(100)
-    ]);
-
-    let inputReady = false;
-    wait(0.2, () => { inputReady = true; });
-
-    let currentGlyph = null;
-    let craneX = 400;
-    let craneAngle = 0;
-    let isSpawning = false;
-    let isGameOver = false;
-
-    function spawnGlyph() {
-        if (isGameOver) return;
-        isSpawning = true;
-        const shapeDef = shapes[Math.floor(rand(0, shapes.length))];
-        const col = colors[Math.floor(rand(0, colors.length))];
-
-        currentGlyph = add([
-            rect(shapeDef.w, shapeDef.h),
-            pos(craneX, 100),
+    let hazardObjs = [];
+    hazards.forEach(h => {
+        let hz = add([
+            rect(h.size.x, h.size.y, { radius: 4 }),
+            pos(h.pos),
             anchor("center"),
+            color(255, 100, 0),
             area(),
-            body({ mass: 2 }),
-            rotate(0),
-            color(col),
-            "glyph",
-            { isDropped: false, blockColor: col }
+            "hazard",
+            { hConfig: h, startY: h.pos.y, startX: h.pos.x }
         ]);
+        hazardObjs.push(hz);
+    });
 
-        currentGlyph.add([
-            rect(shapeDef.w - 8, shapeDef.h - 8),
-            pos(0, 0),
+    let doorObjs = [];
+    doors.forEach(d => {
+        let dz = add([
+            rect(d.size.x, d.size.y),
+            pos(d.pos),
             anchor("center"),
-            color(10, 10, 15)
+            color(0, 200, 255),
+            area(),
+            body({ isStatic: true }),
+            "door",
+            { dConfig: d }
         ]);
+        doorObjs.push(dz);
+    });
 
-        currentGlyph.add([
-            text(String.fromCharCode(65 + Math.floor(rand(0, 26))), { size: 14 }),
-            pos(0, 0),
+    let switchObjs = [];
+    switches.forEach(s => {
+        let sz = add([
+            rect(50, 20),
+            pos(s.pos),
             anchor("center"),
-            color(col)
+            color(255, 255, 0),
+            area(),
+            "switch",
+            { sConfig: s }
         ]);
-        isSpawning = false;
-    }
+        switchObjs.push(sz);
+    });
 
-    spawnGlyph();
+    let portal = add([
+        rect(50, 90, { radius: 8 }),
+        pos(portalPos),
+        anchor("center"),
+        color(0, 255, 128),
+        area(),
+        outline(3, rgb(255, 255, 255)),
+        "portal"
+    ]);
+    portal.add([text("GATE", { size: 14 }), anchor("center"), color(0,0,0)]);
 
-    onMousePress("right", () => {
-        if (!inputReady || microNudges <= 0 || isGameOver) return;
-        microNudges--;
-        nudgeLabel.text = "MICRO-NUDGES: " + microNudges + " (Right Click)";
-
-        // Shockwave pulse
-        add([
-            circle(10),
-            pos(pedestalX, pedestalBaseY),
+    // Spawn Past Echoes with physical mass
+    let echoNodes = [];
+    echoesData.forEach((ed, idx) => {
+        let echoNode = add([
+            rect(24, 24, { radius: 12 }),
+            pos(ed.path[0] || startPos),
             anchor("center"),
-            color(0, 255, 200),
-            opacity(0.8),
-            lifespan(0.4, { fade: 0.1 }),
-            scale(1),
-            {
-                update() {
-                    this.scale = this.scale.add(vec2(dt() * 15, dt() * 15));
-                }
+            color(255, 0, 128),
+            area(),
+            body({ isStatic: true }),
+            z(10),
+            "echo"
+        ]);
+        echoNode.add([text(`#${idx+1}`, { size: 10 }), anchor("center"), color(255, 255, 255)]);
+
+        echoNodes.push({ node: echoNode, data: ed, pathIdx: 0, pTimer: 0 });
+    });
+
+    let courier = add([
+        circle(12),
+        pos(startPos),
+        anchor("center"),
+        color(0, 255, 255),
+        area(),
+        z(20),
+        "courier"
+    ]);
+
+    let gameState = "DRAWING";
+    let timeLeft = 15.0;
+    let drawnPath = [startPos];
+    let executionIndex = 0;
+    let executionTimer = 0;
+
+    // Use mouse down & mouse move for smooth spline drawing
+    onMouseDown(() => {
+        if (gameState !== "DRAWING") return;
+        let mPos = mousePos();
+        let lastPt = drawnPath[drawnPath.length - 1];
+        if (mPos.dist(lastPt) > 8 && drawnPath.length < 250) {
+            drawnPath.push(mPos);
+        }
+    });
+
+    // Also support continuous drawing while holding mouse button down
+    onUpdate(() => {
+        if (gameState === "DRAWING" && isMouseDown()) {
+            let mPos = mousePos();
+            let lastPt = drawnPath[drawnPath.length - 1];
+            if (mPos.dist(lastPt) > 8 && drawnPath.length < 250) {
+                drawnPath.push(mPos);
             }
-        ]);
+        }
+    });
 
-        get("glyph").forEach(g => {
-            if (g.exists() && g.isDropped) {
-                if (typeof g.applyImpulse === "function") {
-                    g.applyImpulse(vec2(rand(-150, 150), -300));
-                } else if (typeof g.addForce === "function") {
-                    g.addForce(vec2(rand(-150, 150), -3000));
-                }
+    onDraw(() => {
+        if (gameState === "DRAWING" && drawnPath.length > 1) {
+            for (let i = 0; i < drawnPath.length - 1; i++) {
+                drawLine({
+                    p1: drawnPath[i],
+                    p2: drawnPath[i+1],
+                    width: 3,
+                    color: rgb(0, 255, 255),
+                });
             }
-        });
+        }
     });
 
     onUpdate(() => {
-        if (!inputReady || isGameOver) return;
+        if (!courier.exists()) return;
 
-        // Pedestal sway escalation
-        pedestalTimer += dt() * (1 + tier * 0.2);
-        const swayFreq = 1.5 + tier * 0.3;
-        const swayAmp = 15 + tier * 8;
-        pedestalAngle = Math.sin(pedestalTimer * swayFreq) * swayAmp;
-        pedestal.angle = pedestalAngle;
+        // Update Echoes animation
+        echoNodes.forEach(en => {
+            if (!en.node.exists() || en.data.path.length === 0) return;
+            en.pTimer += dt();
+            if (en.pTimer >= 0.03) {
+                en.pTimer = 0;
+                en.pathIdx = (en.pathIdx + 1) % en.data.path.length;
+                en.node.pos = en.data.path[en.pathIdx];
+            }
+        });
 
-        // Wind gusts at higher tiers
-        if (tier >= 2) {
-            const wind = Math.sin(time() * 2) * (tier * 25);
-            get("glyph").forEach(g => {
-                if (g.exists() && g.isDropped) {
-                    if (typeof g.addForce === "function") {
-                        g.addForce(vec2(wind, 0));
+        if (gameState === "DRAWING") {
+            timeLeft -= dt();
+            timerLabel.text = `TIME: ${Math.max(0, timeLeft).toFixed(1)}s`;
+
+            if (timeLeft <= 0 || isKeyPressed("space")) {
+                if (drawnPath.length < 5) {
+                    drawnPath = [];
+                    for(let i=0; i<=1.0; i+=0.05) {
+                        drawnPath.push(startPos.lerp(portalPos, i));
                     }
                 }
+                gameState = "EXECUTING";
+                phaseLabel.text = "PHASE: EXECUTION";
+                phaseLabel.color = rgb(255, 0, 128);
+            }
+        } 
+        else if (gameState === "EXECUTING") {
+            executionTimer += dt();
+            if (executionTimer >= 0.02 && executionIndex < drawnPath.length) {
+                executionTimer = 0;
+                courier.pos = drawnPath[executionIndex];
+                executionIndex++;
+            }
+
+            // Hazard movement
+            hazardObjs.forEach(hz => {
+                if (!hz.exists()) return;
+                let h = hz.hConfig;
+                let offset = Math.sin(time() * (h.speed / 50)) * h.range;
+                if (h.size.x > h.size.y) {
+                    hz.pos.x = h.startX + offset;
+                } else {
+                    hz.pos.y = h.startY + offset;
+                }
             });
-        }
 
-        // Crane movement
-        const mPos = mousePos();
-        craneX = clamp(mPos.x, 100, 700);
+            // Switch checking
+            switchObjs.forEach(sz => {
+                if (!sz.exists()) return;
+                let s = sz.sConfig;
+                let triggered = false;
+                if (courier.isColliding(sz)) triggered = true;
+                echoNodes.forEach(en => {
+                    if (en.node.exists() && en.node.isColliding(sz)) triggered = true;
+                });
+                
+                doorObjs.forEach(dz => {
+                    if (!dz.exists()) return;
+                    if (dz.dConfig.id === s.id) {
+                        dz.dConfig.open = triggered;
+                        if (triggered) {
+                            dz.hidden = true;
+                            if (dz.is("body")) dz.unuse("body");
+                            sz.color = rgb(0, 255, 0);
+                        } else {
+                            dz.hidden = false;
+                            if (!dz.is("body")) dz.use(body({ isStatic: true }));
+                            sz.color = rgb(255, 255, 0);
+                        }
+                    }
+                });
+            });
 
-        if (currentGlyph && !currentGlyph.isDropped && currentGlyph.exists()) {
-            craneAngle += (craneX - currentGlyph.pos.x) * 0.05;
-            craneAngle = clamp(craneAngle, -30, 30);
-            craneAngle *= 0.9; // damp
+            // Check Win Condition
+            if (courier.isColliding(portal)) {
+                gameState = "VICTORY";
+                shake(10);
+                add([
+                    rect(1280, 720),
+                    color(0,0,0),
+                    opacity(0.7),
+                    fixed(),
+                    z(200)
+                ]);
+                add([
+                    text("SECTOR SECURED!", { size: 48 }),
+                    pos(center().x, center().y - 40),
+                    anchor("center"),
+                    color(0, 255, 128),
+                    fixed(),
+                    z(201)
+                ]);
 
-            currentGlyph.pos.x = craneX + Math.sin(time() * 4) * 20;
-            currentGlyph.pos.y = 100 + Math.cos(time() * 2) * 5;
-            currentGlyph.angle = craneAngle;
+                let nextBtn = add([
+                    rect(220, 50, { radius: 6 }),
+                    pos(center().x, center().y + 40),
+                    anchor("center"),
+                    color(0, 255, 255),
+                    area(),
+                    fixed(),
+                    z(201)
+                ]);
+                nextBtn.add([text("NEXT SHIFT", { size: 20 }), anchor("center"), color(0, 0, 0)]);
 
-            if (isKeyDown("a") || isKeyDown("left")) currentGlyph.angle -= 90 * dt();
-            if (isKeyDown("d") || isKeyDown("right")) currentGlyph.angle += 90 * dt();
+                nextBtn.onClick(() => {
+                    if (sector % 5 === 0) {
+                        window.showInterstitialAd();
+                    }
+                    echoesData.push({ path: [...drawnPath] });
+                    go("game", { sector: sector + 1, echoes: echoesData, fails: 0 });
+                });
+                return;
+            }
+
+            // Check Failure (Hazard collision)
+            let crashed = false;
+            hazardObjs.forEach(hz => {
+                if (hz.exists() && courier.isColliding(hz)) crashed = true;
+            });
+
+            if (crashed || executionIndex >= drawnPath.length) {
+                if (crashed) {
+                    shake(20);
+                }
+                gameState = "DEFEAT";
+                fails++;
+
+                if (fails >= 5) {
+                    window.showRewardedAd(() => {
+                        timeLeft += 5;
+                        fails = 0;
+                    });
+                }
+
+                echoesData.push({ path: [...drawnPath] });
+
+                add([rect(1280, 720), color(0,0,0), opacity(0.7), fixed(), z(200)]);
+                add([
+                    text(crashed ? "TIMELINE COLLAPSE (CRASH)" : "PATH EXPIRED", { size: 42 }),
+                    pos(center().x, center().y - 50),
+                    anchor("center"),
+                    color(255, 0, 128),
+                    fixed(),
+                    z(201)
+                ]);
+
+                let retryBtn = add([
+                    rect(240, 50, { radius: 6 }),
+                    pos(center().x, center().y + 30),
+                    anchor("center"),
+                    color(255, 255, 255),
+                    area(),
+                    fixed(),
+                    z(201)
+                ]);
+                retryBtn.add([text("SPAWN ECHO & RETRY", { size: 16 }), anchor("center"), color(0, 0, 0)]);
+
+                retryBtn.onClick(() => {
+                    go("game", { sector: sector, echoes: echoesData, fails: fails });
+                });
+            }
         }
     });
 
-    onScroll((delta) => {
-        if (currentGlyph && !currentGlyph.isDropped && currentGlyph.exists()) {
-            currentGlyph.angle += delta.y * 0.2;
-        }
-    });
-
-    onMousePress("left", () => {
-        dropGlyph();
+    onKeyPress("r", () => {
+        go("game", { sector: sector, echoes: echoesData, fails: fails });
     });
 
     onKeyPress("space", () => {
-        dropGlyph();
-    });
-
-    function dropGlyph() {
-        if (!inputReady || !currentGlyph || currentGlyph.isDropped || !currentGlyph.exists() || isSpawning || isGameOver) return;
-
-        currentGlyph.isDropped = true;
-        score += 10 * tier;
-        scoreLabel.text = "SCORE: " + score;
-
-        // Particle burst
-        for (let i = 0; i < 8; i++) {
-            add([
-                circle(rand(2, 4)),
-                pos(currentGlyph.pos),
-                anchor("center"),
-                color(currentGlyph.blockColor),
-                move(rand(0, 360), rand(50, 150)),
-                lifespan(0.4, { fade: 0.2 }),
-                scale(1),
-                {
-                    update() {
-                        this.scale = this.scale.sub(vec2(dt() * 2, dt() * 2));
-                    }
-                }
-            ]);
+        if (gameState === "DRAWING") {
+            timeLeft = 0.01;
         }
-
-        wait(1.0, () => {
-            if (!isGameOver) {
-                spawnGlyph();
-            }
-        });
-    }
-
-    // Check bounds & game over conditions
-    onUpdate(() => {
-        if (isGameOver) return;
-        
-        get("glyph").forEach(g => {
-            if (!g.exists()) return;
-
-            // Fall off screen
-            if (g.pos.y > 650 || g.pos.x < -100 || g.pos.x > 900) {
-                if (g.isDropped) {
-                    destroy(g);
-                    triggerGameOver();
-                } else {
-                    destroy(g);
-                }
-            }
-
-            // Tower height progression check
-            if (g.isDropped && g.pos.y < 350 && tier === 1) {
-                tier = 2;
-                tierLabel.text = "TIER: 2";
-            }
-            if (g.isDropped && g.pos.y < 200 && tier === 2) {
-                tier = 3;
-                tierLabel.text = "TIER: 3";
-            }
-        });
-    });
-
-    function triggerGameOver() {
-        if (isGameOver) return;
-        isGameOver = true;
-
-        consecutiveFails++;
-        setData("consecutiveFails", consecutiveFails);
-
-        if (consecutiveFails >= 3) {
-            window.showInterstitialAd();
-            setData("consecutiveFails", 0);
-        }
-
-        go("gameover", { score: score });
-    }
-});
-
-scene("gameover", (data) => {
-    add([
-        rect(800, 600),
-        color(10, 10, 15),
-        fixed()
-    ]);
-
-    add([
-        text("TOWER COLLAPSED", { size: 40 }),
-        pos(400, 180),
-        anchor("center"),
-        color(255, 50, 100),
-        fixed()
-    ]);
-
-    add([
-        text("Final Score: " + data.score, { size: 24 }),
-        pos(400, 250),
-        anchor("center"),
-        color(200, 200, 220),
-        fixed()
-    ]);
-
-    let inputReady = false;
-    wait(0.3, () => { inputReady = true; });
-
-    const retryBtn = add([
-        rect(220, 50),
-        pos(400, 360),
-        anchor("center"),
-        area(),
-        color(0, 200, 150),
-        fixed()
-    ]);
-    retryBtn.add([ text("RETRY", { size: 20 }), anchor("center"), color(10, 10, 15), fixed() ]);
-
-    retryBtn.onClick(() => {
-        if (!inputReady) return;
-        go("game", { score: 0, tier: 1 });
-    });
-
-    const reviveBtn = add([
-        rect(220, 50),
-        pos(400, 430),
-        anchor("center"),
-        area(),
-        color(150, 0, 200),
-        fixed()
-    ]);
-    reviveBtn.add([ text("WATCH AD TO REVIVE", { size: 16 }), anchor("center"), color(255, 255, 255), fixed() ]);
-
-    reviveBtn.onClick(() => {
-        if (!inputReady) return;
-        window.showRewardedAd(() => {
-            go("game", { score: data.score, tier: 1 });
-        });
-    });
-
-    const menuBtn = add([
-        rect(220, 40),
-        pos(400, 500),
-        anchor("center"),
-        area(),
-        color(50, 50, 70),
-        fixed()
-    ]);
-    menuBtn.add([ text("MAIN MENU", { size: 16 }), anchor("center"), color(200, 200, 200), fixed() ]);
-
-    menuBtn.onClick(() => {
-        if (!inputReady) return;
-        go("menu");
     });
 });
 
