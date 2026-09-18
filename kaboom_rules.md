@@ -58,6 +58,7 @@ if (isMousePressed()) { player.jump(600); }
 - Check if grounded: `player.isGrounded()`.
 - Move: `player.move(vx, vy)`.
 - Jump: `player.jump(power)`.
+- **CRITICAL:** Do NOT use the `solid()` component (it is deprecated and will crash). Instead, to make an immovable physical object (like a floor or wall), use `area()` combined with `body({ isStatic: true })`.
 
 ## Loading Assets (Sprites & Audio)
 Load images directly from raw CDNs or Data URIs.
@@ -81,6 +82,8 @@ player.onCollide("enemy", (e, col) => { /* Collision handling */ });
 wait(2, () => { /* timeout */ });
 loop(1, () => { /* interval */ });
 ```
+- **CRITICAL:** Do NOT use `.overlaps()`. It is deprecated. To check collision manually in an update loop, use `.isColliding(other)`.
+- **CRITICAL:** Do NOT use `keyPress()` or `mouseClick()`. They are deprecated. Use `onKeyPress()` and `onMousePress()` or `onClick()`.
 
 ## UI & Buttons (Menus)
 To create interactive menu buttons, use an `area()` component and the `.onClick()` and `.onHoverUpdate()` methods.
