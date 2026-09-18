@@ -1,26 +1,26 @@
-**SINKHOLE SYNDICATE**
-*Corporate Retro-Dystopian Destruction*
+# TEMPORAL CUSTOMS INSPECTOR
+**SYSTEM-STATUS: ONLINE // ERA: 2084**
 
 ---
 
-### **About the Game**
-Welcome aboard, Employee #404. Management has reviewed your performance metrics, and you’ve been reassigned to our premier asset-liquidation division. Your task is simple: swallow office furniture, dodge rogue corporate drones, and meet your mandatory destruction quota before the shift clock runs out. Failure is not an option—unless you want to face immediate termination! 
-
-Sinkhole Syndicate is a fast-paced, arcade-style physics game wrapped in a slick retro-dystopian terminal aesthetic. Expand your void, swallow the office, and cash in your stolen loot on the black market to upgrade your destructive capabilities.
+### **Game Summary**
+Welcome to the front lines of timeline security, Inspector! In **Temporal Customs Inspector**, you are tasked with managing cargo across three different eras: the Past, the Present, and the Future. Sort incoming artifacts, manage your timeline stability before time runs out, and avoid letting corrupted paradoxes collapse the entire space-time continuum. Do you have what it takes to climb the Temporal Archives and secure the multiverse?
 
 ---
 
 ### **How to Play**
-1. **Clock In:** Start your shift and review your mandatory property damage quota ($).
-2. **Swallow the Office:** Guide your sinkhole over desks, chairs, computers, and filing cabinets to drag them into the void and rack up your score.
-3. **Manage Stability:** Expanding your hole drains your stability meter. Keep an eye on it, or you'll lose your pulling power!
-4. **Watch out for Drones:** Avoid hitting corporate security drones, as collisions will damage your stability and ruin your workflow.
-5. **Hit the Quota:** Reach your financial goal before the 60-second timer hits zero to advance to the next shift and cash in your loot at the Black Market.
+- **Sort the Cargo:** Match items to their correct era core based on their color coding:
+  - 🟢 **Green (Past Core):** Fossils, urns, and runestones.
+  - 🟠 **Amber (Present Core):** Floppy disks, VHS tapes, and CRT monitors.
+  - 🔵 **Cyan (Future Core):** Plasma cores, laser rifles, and dark matrices.
+- **Beat the Clock:** Each shift gives you 30 seconds of stability. Pack all items and hit **Verify** before time runs out!
+- **Beware Decay & Entanglement:** As you progress, unplaced items will begin to decay and glitch into random slots. Watch out for quantum-entangled items where rotating one rotates its linked partner!
+- **Boss Anomalies:** Every 10 shifts, face the ultimate challenge—the Chronos Engine—which must be placed across all three timelines simultaneously.
 
 ---
 
 ### **Controls**
-* **Move Mouse:** Aim / Move the sinkhole
-* **Hold Left Click:** Expand the void (drains stability)
-* **Right Click:** Execute a Sonic Burp (pushes away nearby props and drones)
-* **Spacebar:** Pause / Unpause the game
+- **Left-Click:** Pick up / place items from the conveyor belt or grid cells.
+- **R Key:** Rotate the currently held item (and any quantum-linked partners).
+- **Spacebar:** Verify your completed shift and advance to the next wave.
+- **Mouse Hover:** Inspect item dimensions, decay meters, and target placement zones.
