@@ -1,24 +1,26 @@
-### **GRAV-COLLAPSE**
-*Spacetime Orbital Matcher*
+**SINKHOLE SYNDICATE**
+*Corporate Retro-Dystopian Destruction*
 
 ---
 
-### **Summary**
-Welcome to **GRAV-COLLAPSE**, an immersive cosmic puzzle-action game where you manipulate gravity to manage celestial elements on a warping spacetime grid. 
+### **About the Game**
+Welcome aboard, Employee #404. Management has reviewed your performance metrics, and you’ve been reassigned to our premier asset-liquidation division. Your task is simple: swallow office furniture, dodge rogue corporate drones, and meet your mandatory destruction quota before the shift clock runs out. Failure is not an option—unless you want to face immediate termination! 
 
-Drifting elements (from Hydrogen to Iron Cores) are drawn toward the central Singularity. Your goal is to merge matching elements smoothly, build massive combos, feed high-tier Iron Cores into the core, and prevent space dust buildup. Let the instability gauge hit 100%, and the system will trigger a catastrophic Supernova!
+Sinkhole Syndicate is a fast-paced, arcade-style physics game wrapped in a slick retro-dystopian terminal aesthetic. Expand your void, swallow the office, and cash in your stolen loot on the black market to upgrade your destructive capabilities.
 
 ---
 
 ### **How to Play**
-- **Merge Elements:** Combine two identical elements at soft speeds to fuse them into higher-tier elements (Hydrogen ➔ Helium ➔ Carbon ➔ Oxygen ➔ Iron Core).
-- **Avoid Fractures:** High-speed impacts or collisions between mismatched elements will shatter them into Space Dust, increasing your system's instability.
-- **Feed the Singularity:** Guide final-tier **Iron Cores (Fe)** into the central Singularity to score massive points and vent system instability.
-- **Manage Instability:** Keep an eye on your stability bar. Too much Space Dust will trigger warnings and eventually a game-ending Supernova.
+1. **Clock In:** Start your shift and review your mandatory property damage quota ($).
+2. **Swallow the Office:** Guide your sinkhole over desks, chairs, computers, and filing cabinets to drag them into the void and rack up your score.
+3. **Manage Stability:** Expanding your hole drains your stability meter. Keep an eye on it, or you'll lose your pulling power!
+4. **Watch out for Drones:** Avoid hitting corporate security drones, as collisions will damage your stability and ruin your workflow.
+5. **Hit the Quota:** Reach your financial goal before the 60-second timer hits zero to advance to the next shift and cash in your loot at the Black Market.
 
 ---
 
 ### **Controls**
-- **Hold Left-Click:** Attract surrounding elements and spacetime toward your cursor's gravity well.
-- **Hold Right-Click (or Shift):** Repel elements and push them away from your cursor.
-- **Spacebar:** Detonate the *Singularity Pulse* to instantly clear out troublesome Space Dust (Subject to cooldown).
+* **Move Mouse:** Aim / Move the sinkhole
+* **Hold Left Click:** Expand the void (drains stability)
+* **Right Click:** Execute a Sonic Burp (pushes away nearby props and drones)
+* **Spacebar:** Pause / Unpause the game
