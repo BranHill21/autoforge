@@ -151,3 +151,21 @@ To ensure the generated game is polished, optimized, and bug-free:
 3. **Collision Tags:** For `.onCollide("tag")` to work, the target entity MUST have `"tag"` as a bare string in its `add([...])` array. Double-check that all enemies, bullets, and players have explicit string tags.
 4. **UI Layering:** Always assign `z(100)` or higher to UI text and HUD elements so they are never accidentally covered by game entities or particle effects.
 5. **State Initialization:** Always reset global gameplay variables (like `score = 0; health = 100;`) explicitly at the start of the `game` scene or when clicking the "New Game" button. Do not rely on their initial declaration values, as they will not reset upon a Game Over.
+
+## Game Design & Difficulty Scaling
+When designing games that scale infinitely across levels or time, follow these core design principles:
+1. **Multi-Faceted Scaling:** Do not *just* increase the number of enemies. Introduce entirely new challenges at certain thresholds (e.g., at Level 3, introduce a new drone type that moves in curves, circles, or homes in on the player; at Level 5, add indestructible moving obstacles). Note: Avoid complex collision environments if relying heavily on mouse-following physics.
+2. **Pressure Scaling:** Gently decrease the time limit, increase enemy speeds, or reduce the size of collectible items as levels progress until they reach a minimum playable threshold. 
+3. **Achievable Master Goals:** Games should be infinitely replayable, but they should also have at least one explicit "achievable goal" for the player to strive for (e.g., unlocking all upgrades, reaching a specific "Employee of the Month" quota, or defeating a rare Level 10 boss). This gives the session a satisfying arc while allowing endless play afterward.
+
+## Critical Engine Quirks & Vector Math
+Generative AI frequently makes the following syntax errors in Javascript/Kaboom. Review these carefully:
+1. **Vector Math Operators:** JavaScript does NOT support operator overloading. You cannot add vectors with `+`. Doing `pos + vec2(10, 0)` will convert them to strings and crash the game. You MUST use vector methods: `pos = pos.add(vec2(10, 0))`, `vel = vel.scale(2)`, or `pos.x += 10`.
+2. **Function vs Property (Mouse & Camera):** `mousePos()` and `camPos()` are **functions**, not properties. Do NOT write `mousePos.x` or `camPos.y` (this will return undefined and crash). Always use `mousePos().x` and `camPos().y`.
+3. **Color Component Syntax:** The `color()` component expects RGB values. Do NOT pass hex strings like `color("#FF0000")`. Always use `color(255, 0, 0)` or `color(rgb(255, 0, 0))`.
+4. **Text Component Syntax:** The `text()` component takes an options object for its second argument. Do NOT write `text("Score", 24)`. You must write `text("Score", { size: 24 })`.
+
+## UI & Camera Movement (The `fixed()` Component)
+If your game involves the camera moving (e.g., `camPos(player.pos)`), any UI elements (like score text, health bars, or static HUDs) will scroll off the screen. 
+- **CRITICAL:** You MUST add the `fixed()` component to all HUD and UI elements so they ignore camera movement and remain locked to the screen coordinates.
+- Remember to also apply `z(100)` to these `fixed()` UI elements.
