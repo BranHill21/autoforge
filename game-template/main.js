@@ -220,7 +220,7 @@ scene("leaderboard", () => {
 scene("game", () => {
     initAudio();
 
-    let timeRemaining = 30;
+    let timeRemaining = Math.max(15, 30 - currentShift * 0.5);
     let items = [];
     let particles = [];
     let heldItem = null;
@@ -371,9 +371,12 @@ scene("game", () => {
         ];
         heldItem = null;
 
+        let totalItems = Math.min(3 + currentShift, 12);
+        let idCounter = 1;
+
         if (currentShift % 10 === 0) {
             items.push({
-                id: 1,
+                id: idCounter++,
                 name: "CHRONOS ENGINE",
                 era: 3,
                 w: 3,
@@ -385,13 +388,10 @@ scene("game", () => {
                 corrupted: false,
                 beltIndex: 0
             });
-            return;
+            totalItems = Math.max(1, totalItems - 3); // Account for boss space
         }
 
-        let totalItems = Math.min(3 + Math.floor(currentShift / 2), 6);
-        let idCounter = 1;
-
-        for (let i = 0; i < totalItems; i++) {
+        for (let i = items.length; i < totalItems; i++) {
             let temp = choose(ITEM_TEMPLATES);
             items.push({
                 id: idCounter++,
@@ -480,7 +480,7 @@ scene("game", () => {
                 let cellVal = gridState[hover.z][hover.y][hover.x];
                 if (cellVal !== null) {
                     let clickedItem = items.find(i => i.id === cellVal);
-                    if (clickedItem) {
+                    if (clickedItem && !clickedItem.corrupted) {
                         removeItemFromGrid(clickedItem);
                         heldItem = clickedItem;
                         SFX.clack();
@@ -529,11 +529,11 @@ scene("game", () => {
                 window.showInterstitialAd();
             }
 
-            timeRemaining = 30;
-            generateBoard();
+            go("intermission");
         } else {
             SFX.error();
             shake(5);
+            timeRemaining -= 5;
         }
     });
 
@@ -569,6 +569,12 @@ scene("game", () => {
                     if (item.decay <= 0) {
                         item.corrupted = true;
                         SFX.glitch();
+                        anchors--;
+                        shake(10);
+                        if (anchors <= 0) {
+                            triggerDetonation();
+                            return;
+                        }
                         let emptyCells = [];
                         for (let z = 0; z < 3; z++) {
                             for (let y = 0; y < GRID_SIZE; y++) {
@@ -920,6 +926,73 @@ scene("game", () => {
                 fixed: true
             });
         }
+    });
+});
+
+scene("intermission", () => {
+    initAudio();
+
+    add([
+        rect(width(), height()),
+        color(10, 16, 10),
+    ]);
+
+    add([
+        text(`SHIFT ${currentShift - 1} SECURED`, { size: 24, font: "monospace" }),
+        pos(width() / 2, 100),
+        anchor("center"),
+        color(50, 220, 50),
+    ]);
+
+    add([
+        text(`SCORE: ${currentScore}`, { size: 16, font: "monospace" }),
+        pos(width() / 2, 150),
+        anchor("center"),
+        color(50, 220, 50),
+    ]);
+
+    let warningText = "";
+    if (currentShift === 3) {
+        warningText = "[WARNING] TEMPORAL DECAY DETECTED.\nItems on the conveyor will now corrupt over time.\nIf an item corrupts, it locks to the board and disrupts 1 ANCHOR.\nPlace items quickly to avoid temporal damage!";
+    } else if (currentShift === 4) {
+        warningText = "[WARNING] QUANTUM ENTANGLEMENT DETECTED.\nSome items are linked. Rotating one rotates both.\nPlan your placements carefully.";
+    }
+
+    if (warningText) {
+        add([
+            text(warningText, { size: 12, font: "monospace", align: "center", width: 600 }),
+            pos(width() / 2, 250),
+            anchor("center"),
+            color(220, 50, 50),
+        ]);
+    }
+
+    const nextBtn = add([
+        rect(320, 45, { radius: 4 }),
+        pos(width() / 2, 400),
+        anchor("center"),
+        color(20, 40, 20),
+        outline(2, rgb(50, 220, 50)),
+        area(),
+    ]);
+
+    nextBtn.add([
+        text("INITIALIZE NEXT SHIFT", { size: 14, font: "monospace" }),
+        anchor("center"),
+        color(50, 220, 50),
+    ]);
+
+    nextBtn.onHoverUpdate(() => {
+        nextBtn.color = rgb(30, 80, 30);
+    });
+
+    nextBtn.onHoverEnd(() => {
+        nextBtn.color = rgb(20, 40, 20);
+    });
+
+    nextBtn.onClick(() => {
+        SFX.clack();
+        go("game");
     });
 });
 
