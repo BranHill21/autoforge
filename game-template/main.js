@@ -490,6 +490,10 @@ scene("game", () => {
     });
 });
 scene("lose", (reason) => {
+    // Store final stats for display before resetting
+    const finalLevel = gameState.level;
+    const finalMoney = gameState.money;
+
     // Rogue-lite mechanic: Wipe the save data on death!
     setData("sinkhole_save", null);
     gameState = JSON.parse(JSON.stringify(defaultState));
@@ -511,7 +515,7 @@ scene("lose", (reason) => {
     ]);
 
     add([
-        text(`You reached Shift ${gameState.level}\nand embezzled $${gameState.money}.`, { size: 16, font: "monospace" }),
+        text(`You reached Shift ${finalLevel}\nand embezzled $${finalMoney}.`, { size: 16, font: "monospace" }),
         pos(400, 320),
         anchor("center"),
         color(C_GOLD)
