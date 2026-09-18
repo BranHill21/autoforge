@@ -1,26 +1,19 @@
-# TEMPORAL CUSTOMS INSPECTOR
-**SYSTEM-STATUS: ONLINE // ERA: 2084**
+# SUBTERRANEAN CLINIC
+
+## Summary
+Welcome to **Subterranean Clinic**, a high-stakes, cyberpunk medical management game where ethics are a luxury and survival depends on steady hands. Operating deep in the underground, your job is to manage illicit organ grafts, cater to desperate clientele, and keep your patients breathing while managing your bottom line. Move fast, satisfy your buyers, but watch out—every illegal procedure raises your **Police Heat**, and one wrong move means the authorities will shut your operation down permanently!
 
 ---
 
-### **Game Summary**
-Welcome to the front lines of timeline security, Inspector! In **Temporal Customs Inspector**, you are tasked with managing cargo across three different eras: the Past, the Present, and the Future. Sort incoming artifacts, manage your timeline stability before time runs out, and avoid letting corrupted paradoxes collapse the entire space-time continuum. Do you have what it takes to climb the Temporal Archives and secure the multiverse?
+## How to Play
+1. **Fulfill Client Demands:** Review the required organs for each patient on your operating table.
+2. **Harvest from the Vat:** Drag the correct biomatter and organs from the **Biomatter Vat** on the left and drop them onto their matching surgery slots on the right. 
+3. **Beat the Clock & Patient Stability:** Complete the grafts before the patient's stability hits 0% or the surgery timer runs out.
+4. **Manage Police Heat:** Successful surgeries increase your credits, reputation, and **Police Heat**. If your heat gets too high between shifts, it's game over! Use bribes if necessary to keep the authorities off your back.
+5. **Survive the Shifts:** Complete all clients in a shift to progress to harder, more lucrative contracts.
 
 ---
 
-### **How to Play**
-- **Sort the Cargo:** Match items to their correct era core based on their color coding:
-  - 🟢 **Green (Past Core):** Fossils, urns, and runestones.
-  - 🟠 **Amber (Present Core):** Floppy disks, VHS tapes, and CRT monitors.
-  - 🔵 **Cyan (Future Core):** Plasma cores, laser rifles, and dark matrices.
-- **Beat the Clock:** Each shift gives you 30 seconds of stability. Pack all items and hit **Verify** before time runs out!
-- **Beware Decay & Entanglement:** As you progress, unplaced items will begin to decay and glitch into random slots. Watch out for quantum-entangled items where rotating one rotates its linked partner!
-- **Boss Anomalies:** Every 10 shifts, face the ultimate challenge—the Chronos Engine—which must be placed across all three timelines simultaneously.
-
----
-
-### **Controls**
-- **Left-Click:** Pick up / place items from the conveyor belt or grid cells.
-- **R Key:** Rotate the currently held item (and any quantum-linked partners).
-- **Spacebar:** Verify your completed shift and advance to the next wave.
-- **Mouse Hover:** Inspect item dimensions, decay meters, and target placement zones.
+## Controls
+* **Mouse / Touch:** Click and drag organs from the Biomatter Vat to the corresponding surgery slots on the Operating Table. Release to drop.
+* **Click / Tap:** Interact with menu buttons, start shifts, and trigger emergency bribes.
