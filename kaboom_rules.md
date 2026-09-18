@@ -108,3 +108,8 @@ window.showRewardedAd = (rewardCallback) => {
     if (rewardCallback) rewardCallback();
 };
 ```
+
+## Custom Components & Duplicate Properties
+In Kaboom v3000, passing a bare object like `{ radius: 10 }` into `add([])` registers it as a custom component that assigns a `.radius` property to the entity.
+**CRITICAL:** If you are also using a built-in component that defines the same property (e.g., `circle(10)` which already defines `.radius`), Kaboom will crash with a "duplicate component property" error. 
+Do NOT define properties in a custom component object that share a name with properties provided by built-in components like `rect()` or `circle()`. If you need to store custom data, use distinct names (e.g., `{ elemRadius: 10 }`).

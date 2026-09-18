@@ -493,7 +493,6 @@ scene("game", () => {
             {
                 tier: tierIndex,
                 vel: v,
-                radius: data.radius,
                 mass: data.mass,
                 name: data.name,
                 code: data.code,
@@ -538,7 +537,6 @@ scene("game", () => {
             "spacedust",
             {
                 vel: v,
-                radius: 6,
                 mass: 0.45
             }
         ]);
