@@ -381,7 +381,7 @@ scene("game", () => {
                 });
                 // If they don't watch or fail again:
                 if (timeLeft <= 0) {
-                    go("start");
+                    go("lose", "TIME OUT!");
                 }
             }
         }
@@ -468,7 +468,7 @@ scene("game", () => {
                 shake(10);
                 destroy(d);
                 if (stability <= 0) {
-                    go("start"); // Game Over
+                    go("lose", "STABILITY CRITICAL!"); // Game Over
                 }
             }
         });
@@ -488,6 +488,34 @@ scene("game", () => {
             get("pauseText").forEach(e => destroy(e));
         }
     });
+});
+scene("lose", (reason) => {
+    add([ rect(800, 600), color(C_DARK) ]);
+
+    add([
+        text("TERMINATED", { size: 48, font: "monospace" }),
+        pos(400, 150),
+        anchor("center"),
+        color(C_PINK)
+    ]);
+
+    add([
+        text(`Reason: ${reason || "UNKNOWN"}`, { size: 24, font: "monospace" }),
+        pos(400, 230),
+        anchor("center"),
+        color(C_CYAN)
+    ]);
+
+    add([
+        text(`You reached Shift ${gameState.level}\nand embezzled $${gameState.money}.`, { size: 16, font: "monospace" }),
+        pos(400, 320),
+        anchor("center"),
+        color(C_GOLD)
+    ]);
+
+    const btn = add([ rect(200, 50, { radius: 4 }), pos(400, 450), anchor("center"), area(), color(C_GREEN) ]);
+    btn.add([ text("MAIN MENU", { size: 18, font: "monospace" }), anchor("center"), color(C_GOLD) ]);
+    btn.onClick(() => go("start"));
 });
 
 go("start");
