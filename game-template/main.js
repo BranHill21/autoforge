@@ -490,6 +490,10 @@ scene("game", () => {
     });
 });
 scene("lose", (reason) => {
+    // Rogue-lite mechanic: Wipe the save data on death!
+    setData("sinkhole_save", null);
+    gameState = JSON.parse(JSON.stringify(defaultState));
+
     add([ rect(800, 600), color(C_DARK) ]);
 
     add([
