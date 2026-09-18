@@ -96,9 +96,24 @@ def run_qa_test():
             page.on("console", log_console)
             page.on("pageerror", log_page_error)
             
-            # Navigate to the game and wait for 3 seconds to let game logic run
+            # Navigate to the game and wait for 10 seconds
             page.goto(f"http://localhost:{PORTAL_PORT}", timeout=10000)
-            page.wait_for_timeout(3000)
+            page.wait_for_timeout(10000)
+            
+            # Attempt to click the center of the screen and press common start keys to bypass the Start Menu
+            try:
+                canvas = page.locator("canvas").first
+                if canvas:
+                    canvas.click(timeout=2000)
+                
+                page.keyboard.press("Enter")
+                page.keyboard.press("Space")
+            except Exception:
+                pass # Ignore if the start interaction fails
+                
+            # Wait for another 15 seconds to catch runtime errors during actual gameplay
+            page.wait_for_timeout(15000)
+            
             browser.close()
     except Exception as e:
         errors_found.append(str(e))
