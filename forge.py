@@ -18,20 +18,30 @@ PORTAL_PORT = "5173"
 # Initialize Gemini Client
 client = genai.Client()
 
-def generate_with_retry(prompt, model=MODEL_FLASH, retries=10, delay=30, is_json=False):
-    """Generates content with automatic backoff for 503 Server Unavailable errors."""
+def generate_with_retry(prompt, model=MODEL_FLASH, fallback_model=None, retries=5, delay=15, is_json=False):
+    """Generates content with automatic backoff and model fallback for 503/429 errors."""
     config = types.GenerateContentConfig(response_mime_type="application/json") if is_json else None
     
+    current_model = model
     for attempt in range(retries):
         try:
             return client.models.generate_content(
-                model=model,
+                model=current_model,
                 contents=prompt,
                 config=config
             ).text
         except errors.APIError as e:
             if "429" in str(e) or "503" in str(e):
-                print(f"⏳ Rate limit or server busy. Retrying in {delay} seconds (Attempt {attempt + 1}/{retries})...")
+                print(f"⏳ Rate limit or server busy on {current_model}. (Attempt {attempt + 1}/{retries})")
+                
+                # If we have a fallback model and we just failed on the main model, switch immediately
+                if fallback_model and current_model != fallback_model:
+                    print(f"🔄 Switching to fallback model: {fallback_model} to save quota...")
+                    current_model = fallback_model
+                    time.sleep(2) # Short wait before using fallback
+                    continue
+                    
+                print(f"⏳ Retrying in {delay} seconds...")
                 time.sleep(delay)
             else:
                 print(f"❌ Unrecoverable API Error: {e}")
@@ -173,7 +183,7 @@ def run_pipeline(interactive=False):
         gdd = state.get("gdd", state.get("concept", state["game_name"]))
         prompt = f"Write a complete, single-file Kaboom.js game based on this Game Design Document:\n\n{gdd}\n\nCRITICAL REQUIREMENTS:\n1. Follow the rules in this cheat sheet strictly:\n{rules}\n2. The game must be fully visualized using the requested Kenney.nl assets (load them via direct URLs).\n3. You must include a Start Menu, Game Over screen, Score tracking, and Instructions.\n4. Implement the Ad Hooks (`showInterstitialAd()`, `showRewardedAd()`) as placeholder console.log functions.\n5. Ensure all controls are fully functional and error-free. Initialize kaboom with `kaboom({{ width: 800, height: 600, letterbox: true }});` so it scales correctly on itch.io.\nOutput ONLY the raw javascript code, no markdown, no explanations."
         
-        raw_output = generate_with_retry(prompt, model=MODEL_PRO)
+        raw_output = generate_with_retry(prompt, model=MODEL_PRO, fallback_model=MODEL_FLASH)
         clean_code = extract_js(raw_output)
         
         os.makedirs("game-template", exist_ok=True)
