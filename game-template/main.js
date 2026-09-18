@@ -250,7 +250,7 @@ scene("game", () => {
         rect(800, 50),
         color(C_GREEN),
         pos(0,0),
-        zIndex(100)
+        z(100)
     ]);
 
     const scoreLabel = uiBar.add([ text(`SCORE: $${gameState.score}`, { size: 16, font: "monospace" }), pos(20, 15), color(C_GOLD) ]);
