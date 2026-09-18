@@ -24,7 +24,9 @@ let gameState = {
     upgrades: {
         pullForce: 1,
         maxStability: 100,
-        bonusTime: 0
+        bonusTime: 0,
+        pullLevel: 0,
+        stabLevel: 0
     },
     money: 0
 };
@@ -104,6 +106,10 @@ scene("start", () => {
         gameState.quota = 1000;
         gameState.level = 1;
         gameState.mass = 1;
+        gameState.upgrades.pullLevel = 0;
+        gameState.upgrades.stabLevel = 0;
+        gameState.upgrades.pullForce = 1;
+        gameState.upgrades.maxStability = 100;
         go("briefing");
     });
 
@@ -178,7 +184,10 @@ scene("market", () => {
         color(C_GOLD)
     ]);
 
-    const createUpgradeItem = (title, cost, onBuy, y) => {
+    const createUpgradeItem = (title, cost, maxLevel, currentLevelGetter, onBuy, y) => {
+        let currentLvl = currentLevelGetter();
+        let displayTitle = currentLvl >= maxLevel ? `${title} (MAX)` : `${title} (Lvl ${currentLvl}/${maxLevel})`;
+
         const box = add([
             rect(500, 50, { radius: 4 }),
             pos(400, y),
@@ -187,32 +196,36 @@ scene("market", () => {
             color(C_GREEN),
             outline(1, C_CYAN)
         ]);
-        box.add([ text(`${title} - $${cost}`, { size: 16, font: "monospace" }), pos(-230, -8), color(C_GOLD) ]);
+        box.add([ text(`${displayTitle} - $${cost}`, { size: 16, font: "monospace" }), pos(-230, -8), color(C_GOLD) ]);
         
-        const btn = box.add([
-            rect(100, 30, { radius: 2 }),
-            pos(180, 0),
-            anchor("center"),
-            area(),
-            color(C_PINK)
-        ]);
-        btn.add([ text("BUY", { size: 14, font: "monospace" }), anchor("center"), color(C_DARK) ]);
-        
-        btn.onClick(() => {
-            if (gameState.money >= cost) {
-                gameState.money -= cost;
-                onBuy();
-                go("market");
-            }
-        });
+        if (currentLvl < maxLevel) {
+            const btn = box.add([
+                rect(100, 30, { radius: 2 }),
+                pos(180, 0),
+                anchor("center"),
+                area(),
+                color(C_PINK)
+            ]);
+            btn.add([ text("BUY", { size: 14, font: "monospace" }), anchor("center"), color(C_DARK) ]);
+            
+            btn.onClick(() => {
+                if (gameState.money >= cost) {
+                    gameState.money -= cost;
+                    onBuy();
+                    go("market");
+                }
+            });
+        }
     };
 
-    createUpgradeItem("Gravitational Pull Booster", 100, () => {
+    createUpgradeItem("Gravitational Pull Booster", 100, 5, () => gameState.upgrades.pullLevel, () => {
         gameState.upgrades.pullForce += 0.5;
+        gameState.upgrades.pullLevel++;
     }, 220);
 
-    createUpgradeItem("Stability Energy Tank", 150, () => {
+    createUpgradeItem("Stability Energy Tank", 150, 5, () => gameState.upgrades.stabLevel, () => {
         gameState.upgrades.maxStability += 50;
+        gameState.upgrades.stabLevel++;
     }, 290);
 
     const backBtn = add([
@@ -242,8 +255,11 @@ scene("game", () => {
     // Shift clock timer (60 seconds)
     let timeLeft = 60;
     let isPaused = false;
+    let inputReady = false;
     let stability = gameState.upgrades.maxStability;
     let maxStability = gameState.upgrades.maxStability;
+
+    wait(0.2, () => inputReady = true);
 
     // UI Top bar
     const uiBar = add([
@@ -330,16 +346,21 @@ scene("game", () => {
     }
 
     onUpdate(() => {
-        if (isPaused) return;
+        if (isPaused || !inputReady) return;
 
         // Timer
         timeLeft -= dt();
         timeLabel.text = `TIME: ${Math.max(0, Math.ceil(timeLeft))}s`;
 
-        if (timeLeft <= 0) {
-            // Check win/loss quota
-            if (gameState.score >= gameState.quota) {
+        const activeProps = props.filter(p => p.exists());
+        let quotaMet = gameState.score >= gameState.quota;
+
+        if (timeLeft <= 0 || (activeProps.length === 0 && quotaMet)) {
+            if (quotaMet) {
                 gameState.money += Math.floor(gameState.score / 2);
+                gameState.level++;
+                gameState.quota += 500;
+                gameState.score = 0; // Reset score for next level
                 window.showInterstitialAd();
                 go("market");
             } else {
@@ -423,6 +444,8 @@ scene("game", () => {
 
         // Drone movement
         drones.forEach(d => {
+            if (!d.exists()) return;
+
             d.move(d.dir.scale(d.speed));
             if (d.pos.x < 50 || d.pos.x > 750) d.dir.x *= -1;
             if (d.pos.y < 80 || d.pos.y > 550) d.dir.y *= -1;
@@ -432,6 +455,9 @@ scene("game", () => {
                 stability -= 25;
                 shake(10);
                 destroy(d);
+                if (stability <= 0) {
+                    go("start"); // Game Over
+                }
             }
         });
     });

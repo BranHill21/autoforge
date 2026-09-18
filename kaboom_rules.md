@@ -85,6 +85,11 @@ loop(1, () => { /* interval */ });
 - **CRITICAL:** Do NOT use `.overlaps()`. It is deprecated. To check collision manually in an update loop, use `.isColliding(other)`.
 - **CRITICAL:** Do NOT use `keyPress()` or `mouseClick()`. They are deprecated. Use `onKeyPress()` and `onMousePress()` or `onClick()`.
 
+## State & Game Logic Rules
+- **Array Management:** When keeping arrays of entities (e.g. `const enemies = []`), always check `if (!e.exists()) return;` inside your custom `onUpdate` loops because calling `destroy(e)` does NOT remove it from your custom array.
+- **Input Carryover:** Input states like `isMouseDown()` or `isKeyPressed()` can bleed across `go("scene")` transitions. Always add a small delay before accepting continuous input in a new scene (e.g. `let inputReady = false; wait(0.1, () => inputReady = true);` and check `!inputReady`).
+- **Win/Loss Conditions:** Always check for early win/loss conditions (e.g., all enemies dead, or player health <= 0) rather than relying strictly on timers. Use `.filter(e => e.exists())` to count remaining active entities in custom arrays.
+
 ## UI & Buttons (Menus)
 To create interactive menu buttons, use an `area()` component and the `.onClick()` and `.onHoverUpdate()` methods.
 ```javascript
