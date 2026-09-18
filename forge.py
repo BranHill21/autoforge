@@ -246,11 +246,36 @@ def run_pipeline(interactive=False):
                     
         if qa_passed:
             print("✅ QA Passed. Zero console errors.")
-            state["status"] = "GENERATE_INSTRUCTIONS"
+            state["status"] = "PLAYABILITY_EVAL"
             save_state(state)
         else:
             print("❌ QA Failed repeatedly. Exiting pipeline to allow manual inspection.")
             sys.exit(1)
+
+    # PHASE 3.2: PLAYABILITY EVALUATION
+    if state["status"] == "PLAYABILITY_EVAL":
+        print("🧠 Performing AI Playability & Bounds Review...")
+        with open("game-template/main.js", "r") as f:
+            current_code = f.read()
+            
+        try:
+            with open("kaboom_rules.md", "r") as f:
+                rules = f.read()
+        except FileNotFoundError:
+            rules = ""
+            
+        playability_prompt = f"Review this Kaboom.js game code strictly for unbeatable states, unwinnable scenarios, missing win-conditions, math/bounds overflows (e.g. generating more items than can physically fit in a grid or on screen), or soft-locks.\n\nRules:\n{rules}\n\nCurrent Code:\n{current_code}\n\nIf you find any logic flaws that could make the game unbeatable or overflow UI/grid bounds, fix them and output the improved raw javascript code. If the code is perfectly safe, output the code unmodified. Ensure it includes `import kaboom from 'kaboom';` and `kaboom({{ width: 800, height: 600, letterbox: true }});`.\nOutput ONLY the raw javascript code."
+        
+        print("🔄 Applying playability improvements...")
+        reviewed_output = generate_with_retry(playability_prompt, model=MODEL_FLASH)
+        clean_reviewed_code = extract_js(reviewed_output)
+        
+        with open("game-template/main.js", "w") as f:
+            f.write(clean_reviewed_code)
+            
+        print("✅ Playability Review Complete.")
+        state["status"] = "GENERATE_INSTRUCTIONS"
+        save_state(state)
 
     # PHASE 3.5: GENERATE INSTRUCTIONS
     if state["status"] == "GENERATE_INSTRUCTIONS":

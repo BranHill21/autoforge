@@ -371,8 +371,9 @@ scene("game", () => {
         ];
         heldItem = null;
 
-        let totalItems = Math.min(3 + currentShift, 12);
+        let totalItems = Math.min(3 + currentShift, 8); // Cap at 8 to fit on screen
         let idCounter = 1;
+        let eraAreas = { 0: 0, 1: 0, 2: 0 };
 
         if (currentShift % 10 === 0) {
             items.push({
@@ -389,10 +390,37 @@ scene("game", () => {
                 beltIndex: 0
             });
             totalItems = Math.max(1, totalItems - 3); // Account for boss space
+            eraAreas[0] += 9;
+            eraAreas[1] += 9;
+            eraAreas[2] += 9;
         }
 
         for (let i = items.length; i < totalItems; i++) {
-            let temp = choose(ITEM_TEMPLATES);
+            let temp = null;
+            let attempts = 0;
+            while(attempts < 20) {
+                temp = choose(ITEM_TEMPLATES.filter(it => it.era !== 3)); // Don't randomly pick bosses
+                let area = temp.w * temp.h;
+                if (eraAreas[temp.era] + area <= 16) {
+                    eraAreas[temp.era] += area;
+                    break;
+                }
+                attempts++;
+            }
+            if (attempts >= 20) {
+                // Failsafe: find the emptiest era and force an item into it
+                let emptiestEra = 0;
+                if (eraAreas[1] < eraAreas[0]) emptiestEra = 1;
+                if (eraAreas[2] < eraAreas[emptiestEra]) emptiestEra = 2;
+                temp = ITEM_TEMPLATES.find(it => it.era === emptiestEra && (eraAreas[emptiestEra] + (it.w * it.h) <= 16));
+                if (!temp) temp = ITEM_TEMPLATES.find(it => it.era === emptiestEra && it.w === 1 && it.h === 1); // fallback 1x1
+                if (temp) {
+                    eraAreas[emptiestEra] += (temp.w * temp.h);
+                } else {
+                    break; // Stop adding items if grid is completely full
+                }
+            }
+
             items.push({
                 id: idCounter++,
                 name: temp.name,
