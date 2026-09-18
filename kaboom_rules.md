@@ -143,3 +143,11 @@ To control the drawing order of entities, use the `z()` component. **DO NOT** us
 - Do NOT use `addLevel()`. It is highly likely you will hallucinate the v2000 syntax. Generate levels manually or use standard object spawning loops.
 - Do NOT use `camScale(2)`. In v3000, it requires a vector: `camScale(vec2(2, 2))`.
 - Do NOT use `body().resolve()`. Physics resolution is handled automatically under the hood in v3000.
+
+## Best Practices for High-Quality Generation
+To ensure the generated game is polished, optimized, and bug-free:
+1. **Memory Leaks:** Always attach `offscreen({ destroy: true })` or `lifespan(5)` to projectiles, spawned enemies, or particle effects. Failure to do so will cause the game to lag heavily after 60 seconds as thousands of objects pile up off-screen.
+2. **Frame-Rate Independence:** ALWAYS use `dt()` for timers, cooldowns, and movement (e.g., `time -= dt()`, `move(dir.scale(speed * dt()))`). Never use `time -= 1` as this will cause the game to run twice as fast on 120Hz monitors compared to 60Hz monitors.
+3. **Collision Tags:** For `.onCollide("tag")` to work, the target entity MUST have `"tag"` as a bare string in its `add([...])` array. Double-check that all enemies, bullets, and players have explicit string tags.
+4. **UI Layering:** Always assign `z(100)` or higher to UI text and HUD elements so they are never accidentally covered by game entities or particle effects.
+5. **State Initialization:** Always reset global gameplay variables (like `score = 0; health = 100;`) explicitly at the start of the `game` scene or when clicking the "New Game" button. Do not rely on their initial declaration values, as they will not reset upon a Game Over.
