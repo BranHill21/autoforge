@@ -24,8 +24,11 @@ def generate_with_retry(prompt, model=MODEL_FLASH, retries=10, delay=30, is_json
     
     for attempt in range(retries):
         try:
-            chat = client.chats.create(model=model, config=config)
-            return chat.send_message(prompt).text
+            return client.models.generate_content(
+                model=model,
+                contents=prompt,
+                config=config
+            ).text
         except errors.APIError as e:
             if "429" in str(e) or "503" in str(e):
                 print(f"⏳ Rate limit or server busy. Retrying in {delay} seconds (Attempt {attempt + 1}/{retries})...")
