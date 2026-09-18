@@ -273,9 +273,19 @@ def run_pipeline(interactive=False):
         with open("game-template/main.js", "w") as f:
             f.write(clean_reviewed_code)
             
-        print("✅ Playability Review Complete.")
-        state["status"] = "GENERATE_INSTRUCTIONS"
-        save_state(state)
+        print("🤖 Running Post-Improvement QA...")
+        passed, err_msg = run_qa_test()
+        
+        if passed:
+            print("✅ Playability Review and QA Complete.")
+            state["status"] = "GENERATE_INSTRUCTIONS"
+            save_state(state)
+        else:
+            print(f"⚠️ Playability changes introduced errors:\n{err_msg}")
+            print("🔄 Routing back to Automated QA for self-healing...")
+            state["status"] = "LOCAL_QA"
+            save_state(state)
+            return run_pipeline(interactive)
 
     # PHASE 3.5: GENERATE INSTRUCTIONS
     if state["status"] == "GENERATE_INSTRUCTIONS":
