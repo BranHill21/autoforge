@@ -272,7 +272,6 @@ scene("game", () => {
     let pulseCooldown = 0;
     let secondsElapsed = 0;
     let firstIronCoreUnlocked = false;
-    let lives = 1;
     let gravityShieldTimer = 0;
 
     const center = vec2(width() / 2, height() / 2);
@@ -433,7 +432,7 @@ scene("game", () => {
         area(),
     ]);
 
-    const adsBtnText = adsButton.add([
+    adsButton.add([
         text("BYPASS COOLDOWN [AD]", { size: 9 }),
         pos(10, 9),
         color(255, 255, 255)
@@ -464,14 +463,14 @@ scene("game", () => {
         color(255, 50, 100)
     ]);
 
-    function createExplosion(pos, color, count = 15, sizeMin = 2, sizeMax = 6) {
+    function createExplosion(posVec, col, count = 15, sizeMin = 2, sizeMax = 6) {
         for (let i = 0; i < count; i++) {
             const angle = rand(0, Math.PI * 2);
             const speed = rand(60, 280);
             add([
-                pos(pos),
+                pos(posVec),
                 circle(rand(sizeMin, sizeMax)),
-                color(color),
+                color(col),
                 move(angle, speed),
                 lifespan(0.5, { fade: 0.4 }),
                 anchor("center")
@@ -617,7 +616,6 @@ scene("game", () => {
         }
 
         let isAttracting = isMouseDown("left");
-        let isRepelling = isMouseDown("right") || isKeyDown("shift");
 
         if (isAttracting && mousePos()) {
             startGravityHum();
@@ -721,7 +719,7 @@ scene("game", () => {
         destroy(e2);
 
         if (nextTierIndex <= 5) {
-            const newborn = spawnElement(nextTierIndex, spawnP, conservVel);
+            spawnElement(nextTierIndex, spawnP, conservVel);
             if (nextTierIndex === 5 && !firstIronCoreUnlocked) {
                 firstIronCoreUnlocked = true;
                 window.showInterstitialAd();
@@ -1089,7 +1087,7 @@ scene("gameover", (finalScore, surviveTime) => {
         area()
     ]);
 
-    const continueText = adContinueBtn.add([
+    adContinueBtn.add([
         text(globalContinueUsed ? "SHIELD EXHAUSTED" : "PREVENT COLLAPSE (AD)", { size: 11 }),
         anchor("center"),
         color(255, 255, 255)

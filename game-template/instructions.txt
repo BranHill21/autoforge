@@ -1,0 +1,24 @@
+### **GRAV-COLLAPSE**
+*Spacetime Orbital Matcher*
+
+---
+
+### **Summary**
+Welcome to **GRAV-COLLAPSE**, an immersive cosmic puzzle-action game where you manipulate gravity to manage celestial elements on a warping spacetime grid. 
+
+Drifting elements (from Hydrogen to Iron Cores) are drawn toward the central Singularity. Your goal is to merge matching elements smoothly, build massive combos, feed high-tier Iron Cores into the core, and prevent space dust buildup. Let the instability gauge hit 100%, and the system will trigger a catastrophic Supernova!
+
+---
+
+### **How to Play**
+- **Merge Elements:** Combine two identical elements at soft speeds to fuse them into higher-tier elements (Hydrogen ➔ Helium ➔ Carbon ➔ Oxygen ➔ Iron Core).
+- **Avoid Fractures:** High-speed impacts or collisions between mismatched elements will shatter them into Space Dust, increasing your system's instability.
+- **Feed the Singularity:** Guide final-tier **Iron Cores (Fe)** into the central Singularity to score massive points and vent system instability.
+- **Manage Instability:** Keep an eye on your stability bar. Too much Space Dust will trigger warnings and eventually a game-ending Supernova.
+
+---
+
+### **Controls**
+- **Hold Left-Click:** Attract surrounding elements and spacetime toward your cursor's gravity well.
+- **Hold Right-Click (or Shift):** Repel elements and push them away from your cursor.
+- **Spacebar:** Detonate the *Singularity Pulse* to instantly clear out troublesome Space Dust (Subject to cooldown).
