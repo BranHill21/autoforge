@@ -117,3 +117,6 @@ Do NOT define properties in a custom component object that share a name with pro
 ## Custom Drawing & Coordinate Space
 When you use `onDraw("tag", (e) => { ... })` or a component's `draw()` method, the drawing context is **relative to the entity's position**.
 **CRITICAL:** `pos: vec2(0,0)` inside `drawCircle()` or `drawRect()` will draw exactly at the entity's current location. If you want to draw something at a global coordinate (for example, rendering a trail of previous global positions stored in an array), you MUST subtract the entity's position: `pos: globalPos.sub(e.pos)`. Failure to do this will cause the drawing to be offset by the entity's position twice.
+
+## Visual Effects & Occlusion
+When creating visual effects (like glows, auras, or trails) that are drawn behind or exactly on top of a solid entity, **you must ensure the effect is drawn larger than the entity itself**. If the effect's radius/size is equal to or smaller than the solid core, it will be completely hidden by the solid core and the user will not see it. Always add a padding offset (e.g., `radius: e.radius + 10`) to visual effects so they peek out from the edges.

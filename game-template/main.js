@@ -821,8 +821,9 @@ scene("game", () => {
 
     onDraw("element", (e) => {
         for (let i = 0; i < e.trail.length; i++) {
-            let opacityVal = (i + 1) / e.trail.length * 0.22;
-            let radiusVal = e.radius * (i + 1) / e.trail.length;
+            let opacityVal = (i + 1) / e.trail.length * 0.4;
+            // Make the trail radius slightly larger than the entity so it acts like a visible glowing aura
+            let radiusVal = e.radius + 8 * (i + 1) / e.trail.length;
             drawCircle({
                 pos: e.trail[i].sub(e.pos),
                 radius: radiusVal,
