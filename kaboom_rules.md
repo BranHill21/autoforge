@@ -131,3 +131,15 @@ When creating visual effects (like glows, auras, or trails) that are drawn behin
 
 ## Z-Index Layering
 To control the drawing order of entities, use the `z()` component. **DO NOT** use `zIndex()`—that is a CSS property and it does not exist in Kaboom. If you use `zIndex(100)`, the game will crash with a ReferenceError. Always use `z(100)` instead.
+
+## Save Data & Local Storage
+- **CRITICAL:** Do NOT use the browser's native `localStorage.setItem()` or `getItem()`. Instead, Kaboom v3000 provides built-in `setData("key", value)` and `getData("key")` which safely handle JSON serialization automatically.
+- Example: `setData("save", { score: 100 }); let mySave = getData("save");`
+
+## Progression & Scene Routing
+- **CRITICAL:** When designing games with shops or between-level menus, NEVER route the "Back" or "Exit" button back to the Main Menu (which typically resets game state). Always provide a "Next Level" or "Continue" button that calls `go("game")` or the next scene to preserve state and level progression.
+
+## Deprecated Syntax (v2000 vs v3000)
+- Do NOT use `addLevel()`. It is highly likely you will hallucinate the v2000 syntax. Generate levels manually or use standard object spawning loops.
+- Do NOT use `camScale(2)`. In v3000, it requires a vector: `camScale(vec2(2, 2))`.
+- Do NOT use `body().resolve()`. Physics resolution is handled automatically under the hood in v3000.

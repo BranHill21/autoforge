@@ -15,7 +15,7 @@ window.showRewardedAd = (rewardCallback) => {
 };
 
 // Global Game State
-let gameState = {
+const defaultState = {
     score: 0,
     quota: 1000,
     level: 1,
@@ -30,6 +30,11 @@ let gameState = {
     },
     money: 0
 };
+let gameState = getData("sinkhole_save") || JSON.parse(JSON.stringify(defaultState));
+
+function saveGame() {
+    setData("sinkhole_save", gameState);
+}
 
 // Colors from GDD
 const C_GOLD = rgb(227, 197, 101);
@@ -101,23 +106,28 @@ scene("start", () => {
         });
     };
 
-    makeButton("CLOCK IN", 260, () => {
-        gameState.score = 0;
-        gameState.quota = 1000;
-        gameState.level = 1;
-        gameState.mass = 1;
-        gameState.upgrades.pullLevel = 0;
-        gameState.upgrades.stabLevel = 0;
-        gameState.upgrades.pullForce = 1;
-        gameState.upgrades.maxStability = 100;
+    let btnY = 240;
+    
+    if (getData("sinkhole_save")) {
+        makeButton("CONTINUE SHIFT", btnY, () => {
+            go("briefing");
+        });
+        btnY += 60;
+    }
+
+    makeButton("NEW GAME", btnY, () => {
+        gameState = JSON.parse(JSON.stringify(defaultState));
+        saveGame();
         go("briefing");
     });
+    btnY += 60;
 
-    makeButton("BLACK MARKET", 330, () => {
+    makeButton("BLACK MARKET", btnY, () => {
         go("market");
     });
+    btnY += 60;
 
-    makeButton("EMPLOYEE OF THE MONTH", 400, () => {
+    makeButton("EMPLOYEE OF THE MONTH", btnY, () => {
         go("credits");
     });
 
@@ -212,6 +222,7 @@ scene("market", () => {
                 if (gameState.money >= cost) {
                     gameState.money -= cost;
                     onBuy();
+                    saveGame();
                     go("market");
                 }
             });
@@ -235,8 +246,8 @@ scene("market", () => {
         area(),
         color(C_GREEN),
     ]);
-    backBtn.add([ text("BACK", { size: 18, font: "monospace" }), anchor("center"), color(C_GOLD) ]);
-    backBtn.onClick(() => go("start"));
+    backBtn.add([ text("NEXT SHIFT", { size: 18, font: "monospace" }), anchor("center"), color(C_GOLD) ]);
+    backBtn.onClick(() => go("briefing"));
 });
 
 scene("credits", () => {
@@ -307,7 +318,8 @@ scene("game", () => {
         { name: "cabinet", size: 40, value: 400, color: rgb(150, 150, 150) },
     ];
 
-    for (let i = 0; i < 25; i++) {
+    const propCount = 20 + (gameState.level * 5);
+    for (let i = 0; i < propCount; i++) {
         const type = propTypes[Math.floor(rand(0, propTypes.length))];
         const p = add([
             pos(rand(100, 700), rand(100, 500)),
