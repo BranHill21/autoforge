@@ -1,27 +1,20 @@
-# TEMPORAL COURIER
+Neon Necromancer
 
-**Draw splines. Deliver packages. Leave Echoes behind.**
+A fast-paced, reverse bullet hell where you control a squishy Necromancer who cannot attack directly. You are dropped into an arena filled with deadly environmental hazards and swarming enemies. 
 
----
+You must dodge and kite enemies into the traps to kill them. Every enemy that dies instantly resurrects as a loyal, glowing undead minion that orbits you, forming a protective, offensive meat-shield.
 
-### BRIEF SUMMARY
-Step into a retro-futuristic wireframe dimension where time is your greatest asset and your most dangerous obstacle. As a Temporal Courier, your mission is to navigate high-risk sectors and deliver packages to the green portal. You have a 15-second time loop to analyze lethal hazards and plot a safe course. 
+Features:
+- Survive waves of endless enemies by turning their fallen comrades against them.
+- Gather Soul Shards to purchase persistent meta-upgrades and increase your starting power.
+- High-intensity synthwave visuals and geometry-based scaling swarm mechanics.
 
-When your courier meets an untimely demise—or when you bake your run early—your past actions crystallize into solid **Echoes**. Use these temporal clones as stepping stones and weight-triggers to bypass security doors, survive escalating sectors, and secure your delivery!
+How to Play:
+1. Use W, A, S, D (or Arrow Keys) to move your Necromancer.
+2. Kite red enemy squares into the orange spinning traps to kill them.
+3. Collect the yellow XP diamonds that enemies drop to level up during a run.
+4. Grow your skeleton swarm to destroy enemies directly.
 
----
-
-### HOW TO PLAY
-1. **Analyze:** Study the sector hazards (lasers and moving barriers) and locate the green **GATE** portal.
-2. **Draw:** Click and drag your Mouse during the 15-second setup phase to draw a custom spline path for your courier to follow.
-3. **Execute:** Watch your courier trace the path. Avoid running into hazards!
-4. **Iterate:** Every time you crash or finish a run, your path is "baked" into a physical Echo. Use past Echoes to block hazards, trigger switches, and reach previously inaccessible areas.
-5. **Progress:** Reach the green Portal before time collapses to advance to the next, increasingly challenging Sector!
-
----
-
-### CONTROLS
-
-* **Hold Left Mouse Button & Drag:** Draw your custom movement path.
-* **Spacebar:** Bake current path / Force execution phase early & reset.
-* **R Key:** Instant Reset / Restart current sector.
+Controls:
+- W, A, S, D or Arrow Keys - Move
+- Mouse click - UI Interaction
