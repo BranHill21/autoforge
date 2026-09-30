@@ -4,9 +4,10 @@ kaboom({
     width: 1280,
     height: 720,
     letterbox: true,
-    background: [10, 10, 18],
+    background: [20, 0, 30],
 });
 
+// Ad hooks
 window.showInterstitialAd = () => { console.log("Ad Placeholder: Interstitial Ad Shown"); };
 window.showRewardedAd = (rewardCallback) => { 
     console.log("Ad Placeholder: Rewarded Ad Shown"); 
@@ -14,412 +15,352 @@ window.showRewardedAd = (rewardCallback) => {
 };
 
 scene("menu", () => {
-    add([
-        rect(1280, 720),
-        color(10, 10, 18),
-    ]);
+    let soulShards = getData("soulShards") || 0;
+    let metaMaxSkeletons = getData("metaMaxSkeletons") || 0;
+    let metaSpeedBoost = getData("metaSpeedBoost") || 0;
 
-    // Grid lines for neon wireframe look
-    for(let i=0; i<1280; i+=80) {
-        add([rect(1, 720), pos(i, 0), color(0, 255, 255), opacity(0.05)]);
-    }
-    for(let j=0; j<720; j+=80) {
-        add([rect(1280, 1), pos(0, j), color(0, 255, 255), opacity(0.05)]);
-    }
+    add([rect(1280, 720), color(20, 0, 30)]);
+    
+    // grid
+    for(let i=0; i<1280; i+=100) add([rect(1, 720), pos(i,0), color(0, 255, 255), opacity(0.05)]);
+    for(let j=0; j<720; j+=100) add([rect(1280, 1), pos(0,j), color(0, 255, 255), opacity(0.05)]);
 
-    add([
-        text("TEMPORAL COURIER", { size: 64 }),
-        pos(center().x, 150),
-        anchor("center"),
-        color(0, 255, 255),
-    ]);
+    add([text("NEON NECROMANCER", { size: 64 }), pos(center().x, 150), anchor("center"), color(255, 0, 128)]);
+    add([text(`Soul Shards: ${soulShards}`, { size: 32 }), pos(center().x, 250), anchor("center"), color(0, 255, 255)]);
 
-    add([
-        text("Draw splines. Deliver packages. Leave Echoes behind.", { size: 24 }),
-        pos(center().x, 230),
-        anchor("center"),
-        color(255, 0, 128),
-    ]);
+    // Start Button
+    let startBtn = add([rect(240, 60, { radius: 6 }), pos(center().x, 350), anchor("center"), color(0, 255, 128), area()]);
+    startBtn.add([text("START RUN", { size: 24 }), anchor("center"), color(0, 0, 0)]);
+    
+    // Upgrades
+    let skelCost = 50 + metaMaxSkeletons * 50;
+    let upgSkelBtn = add([rect(340, 60, { radius: 6 }), pos(center().x - 200, 480), anchor("center"), color(200, 100, 255), area()]);
+    upgSkelBtn.add([text(`+1 Start Skel (${skelCost} Shards)`, { size: 20 }), anchor("center"), color(0, 0, 0)]);
 
-    // Instructions Box
-    let instBox = add([
-        rect(800, 260, { radius: 8 }),
-        pos(center().x, 420),
-        anchor("center"),
-        color(20, 20, 35),
-        area(),
-        outline(2, rgb(0, 255, 255))
-    ]);
-
-    instBox.add([
-        text(
-            "RULES OF OPERATION:\n\n" +
-            "1. 15-second loop: Analyze hazards & draw path with Mouse (hold & drag).\n" +
-            "2. Courier executes path. Avoid lasers & turrets.\n" +
-            "3. Death / Spacebar: Bakes run into a solid Echo.\n" +
-            "4. Use Echoes as stepping stones and weight-triggers.\n" +
-            "5. Reach the green Portal before shifts collapse!",
-            { size: 18, width: 760 }
-        ),
-        pos(0, 0),
-        anchor("center"),
-        color(200, 200, 220)
-    ]);
-
-    let startBtn = add([
-        rect(240, 60, { radius: 6 }),
-        pos(center().x, 620),
-        anchor("center"),
-        color(0, 255, 128),
-        area(),
-    ]);
-    startBtn.add([text("INITIATE SHIFT", { size: 22 }), anchor("center"), color(0, 0, 0)]);
+    let spdCost = 50 + metaSpeedBoost * 50;
+    let upgSpdBtn = add([rect(340, 60, { radius: 6 }), pos(center().x + 200, 480), anchor("center"), color(200, 100, 255), area()]);
+    upgSpdBtn.add([text(`+Speed (${spdCost} Shards)`, { size: 20 }), anchor("center"), color(0, 0, 0)]);
 
     let inputReady = false;
-    wait(0.2, () => { inputReady = true; });
+    wait(0.2, () => inputReady = true);
 
-    startBtn.onClick(() => {
-        if (!inputReady) return;
-        go("game", { sector: 1, echoes: [] });
+    startBtn.onClick(() => { if (inputReady) go("game"); });
+    
+    upgSkelBtn.onClick(() => {
+        if (soulShards >= skelCost) {
+            soulShards -= skelCost;
+            metaMaxSkeletons++;
+            setData("soulShards", soulShards);
+            setData("metaMaxSkeletons", metaMaxSkeletons);
+            go("menu");
+        }
+    });
+
+    upgSpdBtn.onClick(() => {
+        if (soulShards >= spdCost) {
+            soulShards -= spdCost;
+            metaSpeedBoost++;
+            setData("soulShards", soulShards);
+            setData("metaSpeedBoost", metaSpeedBoost);
+            go("menu");
+        }
     });
 });
 
-scene("game", (data) => {
-    let sector = data.sector || 1;
-    let echoesData = data.echoes || [];
-    let fails = data.fails || 0;
+scene("game", () => {
+    let soulShards = getData("soulShards") || 0;
+    let metaMaxSkeletons = getData("metaMaxSkeletons") || 0;
+    let metaSpeedBoost = getData("metaSpeedBoost") || 0;
+    let runShards = 0;
 
-    setGravity(0);
-
-    // Background aesthetic
-    add([rect(1280, 720), color(12, 12, 22)]);
-    for(let i=0; i<1280; i+=100) add([rect(1, 720), pos(i,0), color(0, 255, 255), opacity(0.03)]);
-    for(let j=0; j<720; j+=100) add([rect(1280, 1), pos(0,j), color(0, 255, 255), opacity(0.03)]);
-
-    // HUD Elements
-    let sectorLabel = add([text(`SECTOR: ${sector}`, { size: 24 }), pos(30, 20), fixed(), z(100), color(0, 255, 255)]);
-    let timerLabel = add([text("TIME: 15.0s", { size: 24 }), pos(300, 20), fixed(), z(100), color(255, 180, 0)]);
-    let phaseLabel = add([text("PHASE: DRAW PATH", { size: 24 }), pos(600, 20), fixed(), z(100), color(255, 0, 128)]);
+    let playerHp = 100;
+    let maxHp = 100;
+    let level = 1;
+    let xp = 0;
+    let xpToLevel = 5;
+    let runTime = 0;
     
-    add([text("[SPACE] Bake Echo & Reset | [R] Instant Reset", { size: 16 }), pos(30, 680), fixed(), z(100), color(100, 100, 140)]);
+    let baseSpeed = 250 + (metaSpeedBoost * 20);
+    
+    let skeletons = [];
+    let orbitRadius = 80;
+    let orbitSpeed = 3; // radians per sec
+    let skelDamage = 1;
+    let maxSkeletons = 10 + metaMaxSkeletons;
 
-    let startPos = vec2(100, 360);
-    let portalPos = vec2(1180, 360);
+    // Arena Background
+    add([rect(1280, 720), color(20, 0, 30)]);
+    for(let i=0; i<1280; i+=100) add([rect(1, 720), pos(i,0), color(255, 0, 128), opacity(0.1)]);
+    for(let j=0; j<720; j+=100) add([rect(1280, 1), pos(0,j), color(255, 0, 128), opacity(0.1)]);
 
-    let hazards = [];
-    let switches = [];
-    let doors = [];
+    let player = add([
+        circle(20),
+        pos(center()),
+        anchor("center"),
+        color(150, 0, 255),
+        area(),
+        body(),
+        "player"
+    ]);
 
-    if (sector >= 1) {
-        hazards.push({ pos: vec2(500, 150), size: vec2(40, 300), speed: 120, dir: 1, range: 200 });
-        hazards.push({ pos: vec2(800, 300), size: vec2(40, 300), speed: 150, dir: -1, range: 200 });
+    // UI
+    let hpBar = add([rect(200, 20), pos(20, 20), color(255, 0, 0), fixed(), z(100)]);
+    let hpBarInner = add([rect(200, 20), pos(20, 20), color(0, 255, 0), fixed(), z(101)]);
+    let levelText = add([text(`LVL: ${level}`, { size: 24 }), pos(20, 50), color(0, 255, 255), fixed(), z(100)]);
+    let xpBar = add([rect(200, 10), pos(20, 80), color(50, 50, 50), fixed(), z(100)]);
+    let xpBarInner = add([rect(0, 10), pos(20, 80), color(255, 255, 0), fixed(), z(101)]);
+    let timeText = add([text(`TIME: 0`, { size: 24 }), pos(640, 20), anchor("top"), color(255, 0, 128), fixed(), z(100)]);
+
+    function spawnSkeleton() {
+        if (skeletons.length >= maxSkeletons) return;
+        let skel = add([
+            polygon([vec2(0, -15), vec2(10, 10), vec2(-10, 10)]),
+            pos(player.pos),
+            anchor("center"),
+            color(0, 255, 255),
+            area(),
+            "skeleton",
+            { angle: Math.random() * Math.PI * 2 }
+        ]);
+        skeletons.push(skel);
     }
-    if (sector >= 5) {
-        hazards.push({ pos: vec2(300, 500), size: vec2(300, 40), speed: 100, dir: 1, range: 250 });
-    }
-    if (sector >= 10) {
-        switches.push({ pos: vec2(640, 620), pressed: false, id: 1 });
-        doors.push({ pos: vec2(640, 360), size: vec2(40, 200), open: false, id: 1 });
+    
+    // Initial skeletons based on meta progression
+    for(let i=0; i<metaMaxSkeletons; i++) {
+        spawnSkeleton();
     }
 
-    let hazardObjs = [];
-    hazards.forEach(h => {
-        let hz = add([
-            rect(h.size.x, h.size.y, { radius: 4 }),
-            pos(h.pos),
+    // Traps (Orange crosses / spinning blades)
+    function spawnTrap(p) {
+        add([
+            rect(40, 40),
+            pos(p),
             anchor("center"),
             color(255, 100, 0),
             area(),
-            "hazard",
-            { hConfig: h, startY: h.pos.y, startX: h.pos.x }
-        ]);
-        hazardObjs.push(hz);
+            "trap",
+            { rotSpeed: 100 }
+        ]).onUpdate(function() {
+            this.angle += this.rotSpeed * dt();
+        });
+    }
+    
+    spawnTrap(vec2(300, 200));
+    spawnTrap(vec2(980, 200));
+    spawnTrap(vec2(300, 520));
+    spawnTrap(vec2(980, 520));
+
+    // Enemy Spawner
+    let enemySpeed = 100;
+    let spawnRate = 2.0;
+    
+    loop(0.5, () => {
+        runTime += 0.5;
+        timeText.text = `TIME: ${Math.floor(runTime)}`;
+        enemySpeed = 100 + runTime * 0.5;
+        spawnRate = Math.max(0.1, 2.0 - (runTime * 0.02));
     });
 
-    let doorObjs = [];
-    doors.forEach(d => {
-        let dz = add([
-            rect(d.size.x, d.size.y),
-            pos(d.pos),
-            anchor("center"),
-            color(0, 200, 255),
-            area(),
-            body({ isStatic: true }),
-            "door",
-            { dConfig: d }
-        ]);
-        doorObjs.push(dz);
+    let spawnTimer = 0;
+    onUpdate(() => {
+        spawnTimer += dt();
+        if (spawnTimer >= spawnRate) {
+            spawnTimer = 0;
+            // Spawn at edges
+            let p;
+            if (chance(0.5)) {
+                p = vec2(chance(0.5) ? -50 : 1330, rand(0, 720));
+            } else {
+                p = vec2(rand(0, 1280), chance(0.5) ? -50 : 770);
+            }
+            add([
+                rect(24, 24, {radius: 4}),
+                pos(p),
+                anchor("center"),
+                color(255, 0, 50),
+                area(),
+                "enemy",
+                { hp: 1 + Math.floor(runTime / 60) } // scales hp slightly
+            ]);
+        }
     });
 
-    let switchObjs = [];
-    switches.forEach(s => {
-        let sz = add([
-            rect(50, 20),
-            pos(s.pos),
+    // Enemy AI
+    onUpdate("enemy", (e) => {
+        if (!e.exists()) return;
+        let dir = player.pos.sub(e.pos).unit();
+        e.move(dir.scale(enemySpeed));
+    });
+    
+    // Skeleton Orbit
+    onUpdate(() => {
+        // distribute skeletons evenly
+        skeletons = skeletons.filter(s => s.exists()); // cleanup
+        let len = skeletons.length;
+        for (let i = 0; i < len; i++) {
+            let skel = skeletons[i];
+            let targetAngle = (time() * orbitSpeed) + (i * (Math.PI * 2 / len));
+            skel.pos.x = player.pos.x + Math.cos(targetAngle) * orbitRadius;
+            skel.pos.y = player.pos.y + Math.sin(targetAngle) * orbitRadius;
+            
+            // Draw trail
+            add([
+                circle(4),
+                pos(skel.pos),
+                color(0, 255, 255),
+                opacity(0.5),
+                lifespan(0.1, { fade: 0.1 })
+            ]);
+        }
+    });
+
+    // Collisions
+    player.onCollide("enemy", (e) => {
+        playerHp -= 10;
+        shake(10);
+        destroy(e);
+        checkDeath();
+    });
+
+    onCollide("skeleton", "enemy", (s, e) => {
+        e.hp -= skelDamage;
+        e.color = rgb(255, 255, 255);
+        wait(0.1, () => { if(e.exists()) e.color = rgb(255, 0, 50); });
+        
+        if (e.hp <= 0) {
+            enemyDie(e);
+        }
+    });
+
+    onCollide("enemy", "trap", (e, t) => {
+        enemyDie(e);
+    });
+
+    function enemyDie(e) {
+        // Particles
+        for(let i=0; i<10; i++) {
+            add([
+                rect(6, 6),
+                pos(e.pos),
+                color(255, 0, 128),
+                move(vec2(rand(-1, 1), rand(-1, 1)), rand(100, 300)),
+                lifespan(0.5, { fade: 0.5 })
+            ]);
+        }
+        
+        // Spawn XP
+        add([
+            polygon([vec2(0, -6), vec2(6, 0), vec2(0, 6), vec2(-6, 0)]),
+            pos(e.pos),
             anchor("center"),
             color(255, 255, 0),
             area(),
-            "switch",
-            { sConfig: s }
+            "xp"
         ]);
-        switchObjs.push(sz);
-    });
-
-    let portal = add([
-        rect(50, 90, { radius: 8 }),
-        pos(portalPos),
-        anchor("center"),
-        color(0, 255, 128),
-        area(),
-        outline(3, rgb(255, 255, 255)),
-        "portal"
-    ]);
-    portal.add([text("GATE", { size: 14 }), anchor("center"), color(0,0,0)]);
-
-    // Spawn Past Echoes with physical mass
-    let echoNodes = [];
-    echoesData.forEach((ed, idx) => {
-        let echoNode = add([
-            rect(24, 24, { radius: 12 }),
-            pos(ed.path[0] || startPos),
-            anchor("center"),
-            color(255, 0, 128),
-            area(),
-            body({ isStatic: true }),
-            z(10),
-            "echo"
-        ]);
-        echoNode.add([text(`#${idx+1}`, { size: 10 }), anchor("center"), color(255, 255, 255)]);
-
-        echoNodes.push({ node: echoNode, data: ed, pathIdx: 0, pTimer: 0 });
-    });
-
-    let courier = add([
-        circle(12),
-        pos(startPos),
-        anchor("center"),
-        color(0, 255, 255),
-        area(),
-        z(20),
-        "courier"
-    ]);
-
-    let gameState = "DRAWING";
-    let timeLeft = 15.0;
-    let drawnPath = [startPos];
-    let executionIndex = 0;
-    let executionTimer = 0;
-
-    // Use mouse down & mouse move for smooth spline drawing
-    onMouseDown(() => {
-        if (gameState !== "DRAWING") return;
-        let mPos = mousePos();
-        let lastPt = drawnPath[drawnPath.length - 1];
-        if (mPos.dist(lastPt) > 8 && drawnPath.length < 250) {
-            drawnPath.push(mPos);
+        
+        // Maybe spawn skeleton if missing
+        if (skeletons.length < maxSkeletons) {
+            spawnSkeleton();
         }
+        
+        destroy(e);
+    }
+
+    player.onCollide("xp", (x) => {
+        destroy(x);
+        xp += 1;
+        runShards += 1; 
+        checkLevelUp();
     });
 
-    // Also support continuous drawing while holding mouse button down
+    function checkDeath() {
+        if (playerHp <= 0) {
+            soulShards += runShards;
+            setData("soulShards", soulShards);
+            go("gameover", { runShards: runShards, time: Math.floor(runTime) });
+        }
+    }
+
+    function checkLevelUp() {
+        if (xp >= xpToLevel) {
+            xp -= xpToLevel;
+            level++;
+            xpToLevel = Math.floor(xpToLevel * 1.5);
+            levelText.text = `LVL: ${level}`;
+            shake(15);
+            
+            let upgrades = ["+2 MAX SKELETONS", "+ORBIT RADIUS", "+ORBIT SPEED", "+30 HEAL"];
+            let choice = randi(0, 4); // 0, 1, 2, 3
+            if (choice === 0) maxSkeletons += 2;
+            else if (choice === 1) orbitRadius += 20;
+            else if (choice === 2) orbitSpeed += 1;
+            else {
+                playerHp = Math.min(maxHp, playerHp + 30);
+            }
+
+            add([
+                text(upgrades[choice], { size: 24 }),
+                pos(player.pos.x, player.pos.y - 40),
+                anchor("center"),
+                color(255, 255, 0),
+                move(UP, 50),
+                lifespan(2, { fade: 0.5 })
+            ]);
+        }
+    }
+
+    // Input & Movement
     onUpdate(() => {
-        if (gameState === "DRAWING" && isMouseDown()) {
-            let mPos = mousePos();
-            let lastPt = drawnPath[drawnPath.length - 1];
-            if (mPos.dist(lastPt) > 8 && drawnPath.length < 250) {
-                drawnPath.push(mPos);
-            }
+        let dir = vec2(0, 0);
+        if (isKeyDown("left") || isKeyDown("a")) dir.x -= 1;
+        if (isKeyDown("right") || isKeyDown("d")) dir.x += 1;
+        if (isKeyDown("up") || isKeyDown("w")) dir.y -= 1;
+        if (isKeyDown("down") || isKeyDown("s")) dir.y += 1;
+        
+        if (dir.x !== 0 || dir.y !== 0) {
+            dir = dir.unit();
+            player.move(dir.scale(baseSpeed));
+            
+            // Keep in bounds
+            if (player.pos.x < 20) player.pos.x = 20;
+            if (player.pos.x > 1260) player.pos.x = 1260;
+            if (player.pos.y < 20) player.pos.y = 20;
+            if (player.pos.y > 700) player.pos.y = 700;
         }
+
+        // update UI
+        hpBarInner.width = 200 * (playerHp / maxHp);
+        xpBarInner.width = 200 * (xp / xpToLevel);
+    });
+});
+
+scene("gameover", (data) => {
+    add([rect(1280, 720), color(20, 0, 30)]);
+    add([text("YOU DIED", { size: 80 }), pos(center().x, 200), anchor("center"), color(255, 0, 0)]);
+    add([text(`Survived: ${data.time}s`, { size: 32 }), pos(center().x, 320), anchor("center"), color(255, 255, 255)]);
+    add([text(`Shards Collected: ${data.runShards}`, { size: 32 }), pos(center().x, 380), anchor("center"), color(0, 255, 255)]);
+    
+    let btn = add([rect(240, 60, {radius: 8}), pos(center().x, 500), anchor("center"), color(0, 255, 128), area()]);
+    btn.add([text("MAIN MENU", {size: 24}), anchor("center"), color(0,0,0)]);
+    
+    btn.onClick(() => {
+        window.showInterstitialAd();
+        go("menu");
     });
 
-    onDraw(() => {
-        if (gameState === "DRAWING" && drawnPath.length > 1) {
-            for (let i = 0; i < drawnPath.length - 1; i++) {
-                drawLine({
-                    p1: drawnPath[i],
-                    p2: drawnPath[i+1],
-                    width: 3,
-                    color: rgb(0, 255, 255),
-                });
-            }
-        }
-    });
+    let btnAd = add([rect(240, 60, {radius: 8}), pos(center().x, 580), anchor("center"), color(255, 0, 128), area()]);
+    btnAd.add([text("WATCH AD (x2 Shards)", {size: 16}), anchor("center"), color(0,0,0)]);
 
-    onUpdate(() => {
-        if (!courier.exists()) return;
-
-        // Update Echoes animation
-        echoNodes.forEach(en => {
-            if (!en.node.exists() || en.data.path.length === 0) return;
-            en.pTimer += dt();
-            if (en.pTimer >= 0.03) {
-                en.pTimer = 0;
-                en.pathIdx = (en.pathIdx + 1) % en.data.path.length;
-                en.node.pos = en.data.path[en.pathIdx];
-            }
+    let adWatched = false;
+    btnAd.onClick(() => {
+        if (adWatched) return;
+        window.showRewardedAd(() => {
+            adWatched = true;
+            let currentShards = getData("soulShards") || 0;
+            setData("soulShards", currentShards + data.runShards); // Add again
+            btnAd.color = rgb(100, 100, 100);
+            btnAd.children[0].text = "REWARD CLAIMED";
         });
-
-        if (gameState === "DRAWING") {
-            timeLeft -= dt();
-            timerLabel.text = `TIME: ${Math.max(0, timeLeft).toFixed(1)}s`;
-
-            if (timeLeft <= 0 || isKeyPressed("space")) {
-                if (drawnPath.length < 5) {
-                    drawnPath = [];
-                    for(let i=0; i<=1.0; i+=0.05) {
-                        drawnPath.push(startPos.lerp(portalPos, i));
-                    }
-                }
-                gameState = "EXECUTING";
-                phaseLabel.text = "PHASE: EXECUTION";
-                phaseLabel.color = rgb(255, 0, 128);
-            }
-        } 
-        else if (gameState === "EXECUTING") {
-            executionTimer += dt();
-            if (executionTimer >= 0.02 && executionIndex < drawnPath.length) {
-                executionTimer = 0;
-                courier.pos = drawnPath[executionIndex];
-                executionIndex++;
-            }
-
-            // Hazard movement
-            hazardObjs.forEach(hz => {
-                if (!hz.exists()) return;
-                let h = hz.hConfig;
-                let offset = Math.sin(time() * (h.speed / 50)) * h.range;
-                if (h.size.x > h.size.y) {
-                    hz.pos.x = h.startX + offset;
-                } else {
-                    hz.pos.y = h.startY + offset;
-                }
-            });
-
-            // Switch checking
-            switchObjs.forEach(sz => {
-                if (!sz.exists()) return;
-                let s = sz.sConfig;
-                let triggered = false;
-                if (courier.isColliding(sz)) triggered = true;
-                echoNodes.forEach(en => {
-                    if (en.node.exists() && en.node.isColliding(sz)) triggered = true;
-                });
-                
-                doorObjs.forEach(dz => {
-                    if (!dz.exists()) return;
-                    if (dz.dConfig.id === s.id) {
-                        dz.dConfig.open = triggered;
-                        if (triggered) {
-                            dz.hidden = true;
-                            if (dz.is("body")) dz.unuse("body");
-                            sz.color = rgb(0, 255, 0);
-                        } else {
-                            dz.hidden = false;
-                            if (!dz.is("body")) dz.use(body({ isStatic: true }));
-                            sz.color = rgb(255, 255, 0);
-                        }
-                    }
-                });
-            });
-
-            // Check Win Condition
-            if (courier.isColliding(portal)) {
-                gameState = "VICTORY";
-                shake(10);
-                add([
-                    rect(1280, 720),
-                    color(0,0,0),
-                    opacity(0.7),
-                    fixed(),
-                    z(200)
-                ]);
-                add([
-                    text("SECTOR SECURED!", { size: 48 }),
-                    pos(center().x, center().y - 40),
-                    anchor("center"),
-                    color(0, 255, 128),
-                    fixed(),
-                    z(201)
-                ]);
-
-                let nextBtn = add([
-                    rect(220, 50, { radius: 6 }),
-                    pos(center().x, center().y + 40),
-                    anchor("center"),
-                    color(0, 255, 255),
-                    area(),
-                    fixed(),
-                    z(201)
-                ]);
-                nextBtn.add([text("NEXT SHIFT", { size: 20 }), anchor("center"), color(0, 0, 0)]);
-
-                nextBtn.onClick(() => {
-                    if (sector % 5 === 0) {
-                        window.showInterstitialAd();
-                    }
-                    echoesData.push({ path: [...drawnPath] });
-                    go("game", { sector: sector + 1, echoes: echoesData, fails: 0 });
-                });
-                return;
-            }
-
-            // Check Failure (Hazard collision)
-            let crashed = false;
-            hazardObjs.forEach(hz => {
-                if (hz.exists() && courier.isColliding(hz)) crashed = true;
-            });
-
-            if (crashed || executionIndex >= drawnPath.length) {
-                if (crashed) {
-                    shake(20);
-                }
-                gameState = "DEFEAT";
-                fails++;
-
-                if (fails >= 5) {
-                    window.showRewardedAd(() => {
-                        timeLeft += 5;
-                        fails = 0;
-                    });
-                }
-
-                echoesData.push({ path: [...drawnPath] });
-
-                add([rect(1280, 720), color(0,0,0), opacity(0.7), fixed(), z(200)]);
-                add([
-                    text(crashed ? "TIMELINE COLLAPSE (CRASH)" : "PATH EXPIRED", { size: 42 }),
-                    pos(center().x, center().y - 50),
-                    anchor("center"),
-                    color(255, 0, 128),
-                    fixed(),
-                    z(201)
-                ]);
-
-                let retryBtn = add([
-                    rect(240, 50, { radius: 6 }),
-                    pos(center().x, center().y + 30),
-                    anchor("center"),
-                    color(255, 255, 255),
-                    area(),
-                    fixed(),
-                    z(201)
-                ]);
-                retryBtn.add([text("SPAWN ECHO & RETRY", { size: 16 }), anchor("center"), color(0, 0, 0)]);
-
-                retryBtn.onClick(() => {
-                    go("game", { sector: sector, echoes: echoesData, fails: fails });
-                });
-            }
-        }
-    });
-
-    onKeyPress("r", () => {
-        go("game", { sector: sector, echoes: echoesData, fails: fails });
-    });
-
-    onKeyPress("space", () => {
-        if (gameState === "DRAWING") {
-            timeLeft = 0.01;
-        }
     });
 });
 
