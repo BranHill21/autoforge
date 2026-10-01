@@ -1,20 +1,20 @@
-Neon Necromancer
+# Kinetic Drop
 
-A fast-paced, reverse bullet hell where you control a squishy Necromancer who cannot attack directly. You are dropped into an arena filled with deadly environmental hazards and swarming enemies. 
+**Defend the core. Drop the kinetic payload.**
 
-You must dodge and kite enemies into the traps to kill them. Every enemy that dies instantly resurrects as a loyal, glowing undead minion that orbits you, forming a protective, offensive meat-shield.
+*Kinetic Drop* is a highly addictive, physics-based action roguelite where pachinko meets tower defense. An endless swarm of geometric alien ships is descending towards your planetary core. Instead of shooting them directly, you control an orbital cannon and drop kinetic orbs that bounce wildly off pegs, obstacles, and enemy ships!
 
-Features:
-- Survive waves of endless enemies by turning their fallen comrades against them.
-- Gather Soul Shards to purchase persistent meta-upgrades and increase your starting power.
-- High-intensity synthwave visuals and geometry-based scaling swarm mechanics.
+Create massive chain reactions, earn scrap, and upgrade your arsenal between waves to survive as long as possible. 
 
-How to Play:
-1. Use W, A, S, D (or Arrow Keys) to move your Necromancer.
-2. Kite red enemy squares into the orange spinning traps to kill them.
-3. Collect the yellow XP diamonds that enemies drop to level up during a run.
-4. Grow your skeleton swarm to destroy enemies directly.
+### How to Play:
+1. **Drop Orbs:** Click anywhere on the screen to drop a Kinetic Orb from your orbital cannon. The cannon follows your mouse cursor!
+2. **Defend the Core:** Don't let the red geometric enemy ships touch the planetary core at the bottom of the screen.
+3. **Collect Scrap:** Destroying enemies drops Scrap. Wait for it to collect automatically and use it to buy upgrades.
+4. **Upgrade:** Between waves, spend your Scrap in the Upgrade Hangar to increase your orb damage, bounce frequency, or multi-orb payload drops.
+5. **Survive:** The waves get infinitely harder. If your core reaches 0 HP, your run is over. 
+6. **Meta-Progression:** Earn Stardust after every run to permanently increase your Core's starting HP.
 
-Controls:
-- W, A, S, D or Arrow Keys - Move
-- Mouse click - UI Interaction
+### Controls:
+- **Mouse Movement:** Move the orbital cannon left and right.
+- **Left Click:** Drop your Kinetic Payload (has a 1-second cooldown).
+- **UI Interaction:** Left click to buy upgrades, watch rewarded ads, or return to the main menu.

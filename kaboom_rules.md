@@ -152,6 +152,13 @@ To ensure the generated game is polished, optimized, and bug-free:
 4. **UI Layering:** Always assign `z(100)` or higher to UI text and HUD elements so they are never accidentally covered by game entities or particle effects.
 5. **State Initialization:** Always reset global gameplay variables (like `score = 0; health = 100;`) explicitly at the start of the `game` scene or when clicking the "New Game" button. Do not rely on their initial declaration values, as they will not reset upon a Game Over.
 
+## Aesthetics & Gameplay Engagement
+To ensure the games are premium, unique, and highly engaging, follow these strict creative guidelines:
+1. **Stylized & Premium UI**: Avoid generic, barebones menus. Give the UI character, polished layouts, and robust visual feedback (e.g., hover states, animations).
+2. **Avoid AI Tropes**: Specifically AVOID the most common "AI generated" visual tropes like overly bright neon aesthetics, "liquid glass"/glassmorphism looks, or cliché cyberpunk overlays. Rely on clean, distinct, and creative color palettes (e.g., pastel, retro 16-bit, monochromatic, or highly curated flat modern palettes).
+3. **Addicting & Challenging**: The gameplay should be intensely engaging and unique. Mechanics should be simple to learn but highly challenging to master, creating that "just one more try" feeling. Add layers of complexity to the core loop.
+4. **Ad Hook Placement**: Always leave room or logical breaks in the gameplay loop (like after completing a difficult wave, dying, or in the shop screen) for potential `showInterstitialAd()` or `showRewardedAd()` placements. Monetization hooks should feel naturally integrated, not bolted on.
+
 ## Game Design & Difficulty Scaling
 When designing games that scale infinitely across levels or time, follow these core design principles:
 1. **Multi-Faceted Scaling:** Do not *just* increase the number of enemies. Introduce entirely new challenges at certain thresholds (e.g., at Level 3, introduce a new drone type that moves in curves, circles, or homes in on the player; at Level 5, add indestructible moving obstacles). Note: Avoid complex collision environments if relying heavily on mouse-following physics.

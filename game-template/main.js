@@ -4,7 +4,7 @@ kaboom({
     width: 1280,
     height: 720,
     letterbox: true,
-    background: [20, 0, 30],
+    background: [26, 26, 29],
 });
 
 // Ad hooks
@@ -14,353 +14,359 @@ window.showRewardedAd = (rewardCallback) => {
     if (rewardCallback) rewardCallback();
 };
 
+const COLOR_BG = rgb(26, 26, 29);
+const COLOR_LINE = rgb(255, 255, 255);
+const COLOR_ACCENT = rgb(0, 255, 170); // Mint green
+const COLOR_RED = rgb(255, 100, 100);
+
+setGravity(1000);
+
+// Global State
+let stardust = getData("stardust") || 0;
+let metaCoreHpBoost = getData("metaCoreHpBoost") || 0;
+
 scene("menu", () => {
-    let soulShards = getData("soulShards") || 0;
-    let metaMaxSkeletons = getData("metaMaxSkeletons") || 0;
-    let metaSpeedBoost = getData("metaSpeedBoost") || 0;
+    add([rect(1280, 720), color(COLOR_BG)]);
+    add([text("KINETIC DROP", { size: 80 }), pos(center().x, 200), anchor("center"), color(COLOR_LINE)]);
+    add([text(`Stardust: ${stardust}`, { size: 32 }), pos(center().x, 300), anchor("center"), color(COLOR_ACCENT)]);
 
-    add([rect(1280, 720), color(20, 0, 30)]);
-    
-    // grid
-    for(let i=0; i<1280; i+=100) add([rect(1, 720), pos(i,0), color(0, 255, 255), opacity(0.05)]);
-    for(let j=0; j<720; j+=100) add([rect(1280, 1), pos(0,j), color(0, 255, 255), opacity(0.05)]);
+    let startBtn = add([rect(240, 60, { radius: 8 }), pos(center().x, 400), anchor("center"), color(COLOR_ACCENT), area()]);
+    startBtn.add([text("START RUN", { size: 24 }), anchor("center"), color(COLOR_BG)]);
 
-    add([text("NEON NECROMANCER", { size: 64 }), pos(center().x, 150), anchor("center"), color(255, 0, 128)]);
-    add([text(`Soul Shards: ${soulShards}`, { size: 32 }), pos(center().x, 250), anchor("center"), color(0, 255, 255)]);
-
-    // Start Button
-    let startBtn = add([rect(240, 60, { radius: 6 }), pos(center().x, 350), anchor("center"), color(0, 255, 128), area()]);
-    startBtn.add([text("START RUN", { size: 24 }), anchor("center"), color(0, 0, 0)]);
-    
-    // Upgrades
-    let skelCost = 50 + metaMaxSkeletons * 50;
-    let upgSkelBtn = add([rect(340, 60, { radius: 6 }), pos(center().x - 200, 480), anchor("center"), color(200, 100, 255), area()]);
-    upgSkelBtn.add([text(`+1 Start Skel (${skelCost} Shards)`, { size: 20 }), anchor("center"), color(0, 0, 0)]);
-
-    let spdCost = 50 + metaSpeedBoost * 50;
-    let upgSpdBtn = add([rect(340, 60, { radius: 6 }), pos(center().x + 200, 480), anchor("center"), color(200, 100, 255), area()]);
-    upgSpdBtn.add([text(`+Speed (${spdCost} Shards)`, { size: 20 }), anchor("center"), color(0, 0, 0)]);
+    let hpCost = 100 + metaCoreHpBoost * 50;
+    let upgBtn = add([rect(340, 60, { radius: 8 }), pos(center().x, 500), anchor("center"), color(COLOR_LINE), area()]);
+    upgBtn.add([text(`+10 Core HP (${hpCost} SD)`, { size: 20 }), anchor("center"), color(COLOR_BG)]);
 
     let inputReady = false;
     wait(0.2, () => inputReady = true);
 
-    startBtn.onClick(() => { if (inputReady) go("game"); });
-    
-    upgSkelBtn.onClick(() => {
-        if (soulShards >= skelCost) {
-            soulShards -= skelCost;
-            metaMaxSkeletons++;
-            setData("soulShards", soulShards);
-            setData("metaMaxSkeletons", metaMaxSkeletons);
-            go("menu");
-        }
-    });
+    startBtn.onClick(() => { if (inputReady) go("game", { wave: 1, scrap: 0, upgrades: {} }); });
 
-    upgSpdBtn.onClick(() => {
-        if (soulShards >= spdCost) {
-            soulShards -= spdCost;
-            metaSpeedBoost++;
-            setData("soulShards", soulShards);
-            setData("metaSpeedBoost", metaSpeedBoost);
+    upgBtn.onClick(() => {
+        if (stardust >= hpCost) {
+            stardust -= hpCost;
+            metaCoreHpBoost++;
+            setData("stardust", stardust);
+            setData("metaCoreHpBoost", metaCoreHpBoost);
             go("menu");
         }
     });
 });
 
-scene("game", () => {
-    let soulShards = getData("soulShards") || 0;
-    let metaMaxSkeletons = getData("metaMaxSkeletons") || 0;
-    let metaSpeedBoost = getData("metaSpeedBoost") || 0;
-    let runShards = 0;
+scene("shop", (data) => {
+    add([rect(1280, 720), color(COLOR_BG)]);
+    add([text("UPGRADE HANGAR", { size: 60 }), pos(center().x, 100), anchor("center"), color(COLOR_LINE)]);
+    add([text(`Scrap: ${data.scrap}`, { size: 40 }), pos(center().x, 200), anchor("center"), color(COLOR_ACCENT)]);
 
-    let playerHp = 100;
-    let maxHp = 100;
-    let level = 1;
-    let xp = 0;
-    let xpToLevel = 5;
-    let runTime = 0;
+    let orbCount = data.upgrades.orbCount || 1;
+    let orbDmg = data.upgrades.orbDmg || 1;
+    let bounciness = data.upgrades.bounciness || 0.6;
+
+    let costCount = orbCount * 50;
+    let costDmg = orbDmg * 50;
+
+    let btnCount = add([rect(300, 60, {radius:8}), pos(center().x - 200, 350), anchor("center"), color(COLOR_LINE), area()]);
+    btnCount.add([text(`+1 Orb Drop (${costCount} Scrap)`, {size: 16}), anchor("center"), color(COLOR_BG)]);
+
+    let btnDmg = add([rect(300, 60, {radius:8}), pos(center().x + 200, 350), anchor("center"), color(COLOR_LINE), area()]);
+    btnDmg.add([text(`+1 Orb Dmg (${costDmg} Scrap)`, {size: 16}), anchor("center"), color(COLOR_BG)]);
+
+    let btnNext = add([rect(240, 60, {radius:8}), pos(center().x, 500), anchor("center"), color(COLOR_ACCENT), area()]);
+    btnNext.add([text(`NEXT WAVE`, {size: 24}), anchor("center"), color(COLOR_BG)]);
+
+    let inputReady = false;
+    wait(0.2, () => inputReady = true);
+
+    btnCount.onClick(() => {
+        if (inputReady && data.scrap >= costCount) {
+            data.scrap -= costCount;
+            data.upgrades.orbCount = orbCount + 1;
+            go("shop", data);
+        }
+    });
+
+    btnDmg.onClick(() => {
+        if (inputReady && data.scrap >= costDmg) {
+            data.scrap -= costDmg;
+            data.upgrades.orbDmg = orbDmg + 1;
+            go("shop", data);
+        }
+    });
+
+    btnNext.onClick(() => {
+        if (inputReady) go("game", { wave: data.wave + 1, scrap: data.scrap, upgrades: data.upgrades });
+    });
+
+    let btnAd = add([rect(240, 60, {radius: 8}), pos(center().x, 600), anchor("center"), color(100, 100, 100), area()]);
+    btnAd.add([text("WATCH AD (+100 Scrap)", {size: 16}), anchor("center"), color(COLOR_LINE)]);
     
-    let baseSpeed = 250 + (metaSpeedBoost * 20);
+    let adWatched = false;
+    btnAd.onClick(() => {
+        if (!adWatched) {
+            window.showRewardedAd(() => {
+                adWatched = true;
+                data.scrap += 100;
+                go("shop", data);
+            });
+        }
+    });
+});
+
+scene("game", (data) => {
+    if (!data.upgrades) data.upgrades = { orbCount: 1, orbDmg: 1, bounciness: 0.6 };
     
-    let skeletons = [];
-    let orbitRadius = 80;
-    let orbitSpeed = 3; // radians per sec
-    let skelDamage = 1;
-    let maxSkeletons = 10 + metaMaxSkeletons;
+    let wave = data.wave || 1;
+    let scrap = data.scrap || 0;
+    let coreHp = 100 + metaCoreHpBoost * 10;
+    let maxCoreHp = coreHp;
 
-    // Arena Background
-    add([rect(1280, 720), color(20, 0, 30)]);
-    for(let i=0; i<1280; i+=100) add([rect(1, 720), pos(i,0), color(255, 0, 128), opacity(0.1)]);
-    for(let j=0; j<720; j+=100) add([rect(1280, 1), pos(0,j), color(255, 0, 128), opacity(0.1)]);
+    let enemiesRemaining = 10 + wave * 5;
+    let totalEnemies = enemiesRemaining;
 
-    let player = add([
-        circle(20),
-        pos(center()),
-        anchor("center"),
-        color(150, 0, 255),
+    let dropCooldown = 0;
+    
+    add([rect(1280, 720), color(COLOR_BG)]);
+    
+    // Core at the bottom
+    let core = add([
+        rect(1280, 50),
+        pos(0, 670),
+        color(COLOR_BG),
+        outline(4, COLOR_LINE),
         area(),
-        body(),
-        "player"
+        body({ isStatic: true }),
+        "core"
     ]);
+    
+    // Pegs scattered around
+    for(let i=0; i<15; i++) {
+        add([
+            circle(10),
+            pos(rand(100, 1180), rand(200, 550)),
+            anchor("center"),
+            color(COLOR_BG),
+            outline(3, COLOR_LINE),
+            area(),
+            body({ isStatic: true }),
+            "peg"
+        ]);
+    }
+
+    // Walls
+    add([rect(20, 720), pos(-20, 0), area(), body({ isStatic: true }), "wall"]);
+    add([rect(20, 720), pos(1280, 0), area(), body({ isStatic: true }), "wall"]);
 
     // UI
-    let hpBar = add([rect(200, 20), pos(20, 20), color(255, 0, 0), fixed(), z(100)]);
-    let hpBarInner = add([rect(200, 20), pos(20, 20), color(0, 255, 0), fixed(), z(101)]);
-    let levelText = add([text(`LVL: ${level}`, { size: 24 }), pos(20, 50), color(0, 255, 255), fixed(), z(100)]);
-    let xpBar = add([rect(200, 10), pos(20, 80), color(50, 50, 50), fixed(), z(100)]);
-    let xpBarInner = add([rect(0, 10), pos(20, 80), color(255, 255, 0), fixed(), z(101)]);
-    let timeText = add([text(`TIME: 0`, { size: 24 }), pos(640, 20), anchor("top"), color(255, 0, 128), fixed(), z(100)]);
-
-    function spawnSkeleton() {
-        if (skeletons.length >= maxSkeletons) return;
-        let skel = add([
-            polygon([vec2(0, -15), vec2(10, 10), vec2(-10, 10)]),
-            pos(player.pos),
-            anchor("center"),
-            color(0, 255, 255),
-            area(),
-            "skeleton",
-            { angle: Math.random() * Math.PI * 2 }
-        ]);
-        skeletons.push(skel);
-    }
+    let uiWave = add([text(`WAVE: ${wave}`, { size: 32 }), pos(20, 20), color(COLOR_LINE), fixed(), z(100)]);
+    let uiScrap = add([text(`SCRAP: ${scrap}`, { size: 32 }), pos(20, 60), color(COLOR_ACCENT), fixed(), z(100)]);
+    let uiEnemies = add([text(`ENEMIES: ${enemiesRemaining}`, { size: 32 }), pos(1260, 20), anchor("topright"), color(COLOR_LINE), fixed(), z(100)]);
+    let uiCoreHp = add([text(`CORE HP: ${coreHp}/${maxCoreHp}`, { size: 32 }), pos(1260, 60), anchor("topright"), color(COLOR_LINE), fixed(), z(100)]);
     
-    // Initial skeletons based on meta progression
-    for(let i=0; i<metaMaxSkeletons; i++) {
-        spawnSkeleton();
-    }
+    // Orbital Cannon
+    let cannon = add([
+        rect(40, 20),
+        pos(center().x, 50),
+        anchor("center"),
+        color(COLOR_ACCENT),
+        z(50)
+    ]);
 
-    // Traps (Orange crosses / spinning blades)
-    function spawnTrap(p) {
+    onUpdate(() => {
+        let mx = mousePos().x;
+        cannon.pos.x = Math.max(50, Math.min(mx, 1230));
+        if (dropCooldown > 0) dropCooldown -= dt();
+    });
+
+    onClick(() => {
+        if (dropCooldown <= 0) {
+            dropCooldown = 1.0; 
+            for (let i = 0; i < data.upgrades.orbCount; i++) {
+                wait(i * 0.1, () => {
+                    let orb = add([
+                        circle(12),
+                        pos(cannon.pos.x, cannon.pos.y + 20),
+                        anchor("center"),
+                        color(COLOR_ACCENT),
+                        area(),
+                        body({ bounce: data.upgrades.bounciness }),
+                        "orb"
+                    ]);
+                });
+            }
+        }
+    });
+
+    // Enemy Spawner
+    let spawnTimer = 0;
+    onUpdate(() => {
+        if (enemiesRemaining > 0) {
+            spawnTimer += dt();
+            if (spawnTimer > Math.max(0.2, 2.0 - (wave * 0.1))) {
+                spawnTimer = 0;
+                enemiesRemaining--;
+                uiEnemies.text = `ENEMIES: ${enemiesRemaining}`;
+                
+                add([
+                    polygon([vec2(0, 15), vec2(-15, -15), vec2(15, -15)]),
+                    pos(rand(100, 1180), -50),
+                    anchor("center"),
+                    color(COLOR_BG),
+                    outline(3, COLOR_RED),
+                    area(),
+                    "enemy",
+                    { hp: 1 + Math.floor(wave / 3), speed: rand(30, 60) + wave * 2, id: rand(0, 100) }
+                ]);
+            }
+        } else {
+            let aliveEnemies = get("enemy");
+            if (aliveEnemies.length === 0) {
+                go("shop", { wave: wave, scrap: scrap, upgrades: data.upgrades });
+            }
+        }
+    });
+
+    onUpdate("enemy", (e) => {
+        if (!e.exists()) return;
+        e.pos.y += e.speed * dt();
+        e.pos.x += Math.sin(time() * 2 + e.id) * 20 * dt();
+    });
+
+    onCollide("orb", "peg", (o, p) => {
+        // Simple manual bounce simulation
+        let dir = o.pos.sub(p.pos).unit();
+        o.pos = o.pos.add(dir.scale(5)); // push out
+        if (dir.y < 0) o.jump(rand(200, 350));
+        else o.jump(rand(100, 200));
+        
+        // Random horizontal nudge
+        o.pos.x += rand(-10, 10);
+    });
+
+    onCollide("orb", "wall", (o, w) => {
+        // bounce off wall
+        o.jump(rand(100, 200));
+        if (o.pos.x < 640) o.pos.x += 10;
+        else o.pos.x -= 10;
+    });
+
+    onCollide("orb", "enemy", (o, e) => {
+        playHitJuice(e.pos);
+        e.hp -= data.upgrades.orbDmg;
+        if (e.hp <= 0) {
+            spawnScrap(e.pos);
+            destroy(e);
+            shake(5);
+        } else {
+            e.color = COLOR_LINE;
+            wait(0.1, () => { if(e.exists()) e.color = COLOR_BG; });
+        }
+        
+        if (o.isGrounded() || true) {
+            o.jump(400); 
+        }
+    });
+
+    onCollide("enemy", "core", (e, c) => {
+        destroy(e);
+        coreHp -= 10;
+        uiCoreHp.text = `CORE HP: ${coreHp}/${maxCoreHp}`;
+        shake(10);
+        c.color = COLOR_RED;
+        wait(0.1, () => { if(c.exists()) c.color = COLOR_BG; });
+        
+        if (coreHp <= 0) {
+            let totalScore = (wave - 1) * 100 + scrap;
+            stardust += Math.floor(totalScore / 10);
+            setData("stardust", stardust);
+            go("gameover", { wave: wave, score: totalScore });
+        }
+    });
+    
+    onUpdate("orb", (o) => {
+        if (o.pos.y > 750) destroy(o);
+    });
+
+    onUpdate("enemy", (e) => {
+        if (e.pos.y > 800) destroy(e);
+    });
+
+    function playHitJuice(p) {
         add([
-            rect(40, 40),
+            circle(15),
             pos(p),
             anchor("center"),
-            color(255, 100, 0),
+            color(COLOR_LINE),
+            lifespan(0.1, { fade: 0.1 })
+        ]);
+    }
+
+    function spawnScrap(p) {
+        let s = add([
+            rect(10, 10, { radius: 2 }),
+            pos(p),
+            anchor("center"),
+            color(COLOR_ACCENT),
             area(),
-            "trap",
-            { rotSpeed: 100 }
-        ]).onUpdate(function() {
-            this.angle += this.rotSpeed * dt();
+            "scrap_item",
+            body(),
+            { collected: false }
+        ]);
+        s.jump(rand(200, 400));
+        
+        wait(1.0, () => {
+            if (s.exists()) {
+                s.collected = true;
+                s.unuse("body");
+            }
         });
     }
     
-    spawnTrap(vec2(300, 200));
-    spawnTrap(vec2(980, 200));
-    spawnTrap(vec2(300, 520));
-    spawnTrap(vec2(980, 520));
-
-    // Enemy Spawner
-    let enemySpeed = 100;
-    let spawnRate = 2.0;
-    
-    loop(0.5, () => {
-        runTime += 0.5;
-        timeText.text = `TIME: ${Math.floor(runTime)}`;
-        enemySpeed = 100 + runTime * 0.5;
-        spawnRate = Math.max(0.1, 2.0 - (runTime * 0.02));
-    });
-
-    let spawnTimer = 0;
-    onUpdate(() => {
-        spawnTimer += dt();
-        if (spawnTimer >= spawnRate) {
-            spawnTimer = 0;
-            // Spawn at edges
-            let p;
-            if (chance(0.5)) {
-                p = vec2(chance(0.5) ? -50 : 1330, rand(0, 720));
-            } else {
-                p = vec2(rand(0, 1280), chance(0.5) ? -50 : 770);
+    onUpdate("scrap_item", (s) => {
+        if (s.collected) {
+            let dir = uiScrap.pos.sub(s.pos).unit();
+            s.move(dir.scale(800));
+            if (s.pos.dist(uiScrap.pos) < 20) {
+                scrap += 10;
+                uiScrap.text = `SCRAP: ${scrap}`;
+                destroy(s);
             }
-            add([
-                rect(24, 24, {radius: 4}),
-                pos(p),
-                anchor("center"),
-                color(255, 0, 50),
-                area(),
-                "enemy",
-                { hp: 1 + Math.floor(runTime / 60) } // scales hp slightly
-            ]);
         }
-    });
-
-    // Enemy AI
-    onUpdate("enemy", (e) => {
-        if (!e.exists()) return;
-        let dir = player.pos.sub(e.pos).unit();
-        e.move(dir.scale(enemySpeed));
-    });
-    
-    // Skeleton Orbit
-    onUpdate(() => {
-        // distribute skeletons evenly
-        skeletons = skeletons.filter(s => s.exists()); // cleanup
-        let len = skeletons.length;
-        for (let i = 0; i < len; i++) {
-            let skel = skeletons[i];
-            let targetAngle = (time() * orbitSpeed) + (i * (Math.PI * 2 / len));
-            skel.pos.x = player.pos.x + Math.cos(targetAngle) * orbitRadius;
-            skel.pos.y = player.pos.y + Math.sin(targetAngle) * orbitRadius;
-            
-            // Draw trail
-            add([
-                circle(4),
-                pos(skel.pos),
-                color(0, 255, 255),
-                opacity(0.5),
-                lifespan(0.1, { fade: 0.1 })
-            ]);
-        }
-    });
-
-    // Collisions
-    player.onCollide("enemy", (e) => {
-        playerHp -= 10;
-        shake(10);
-        destroy(e);
-        checkDeath();
-    });
-
-    onCollide("skeleton", "enemy", (s, e) => {
-        e.hp -= skelDamage;
-        e.color = rgb(255, 255, 255);
-        wait(0.1, () => { if(e.exists()) e.color = rgb(255, 0, 50); });
-        
-        if (e.hp <= 0) {
-            enemyDie(e);
-        }
-    });
-
-    onCollide("enemy", "trap", (e, t) => {
-        enemyDie(e);
-    });
-
-    function enemyDie(e) {
-        // Particles
-        for(let i=0; i<10; i++) {
-            add([
-                rect(6, 6),
-                pos(e.pos),
-                color(255, 0, 128),
-                move(vec2(rand(-1, 1), rand(-1, 1)), rand(100, 300)),
-                lifespan(0.5, { fade: 0.5 })
-            ]);
-        }
-        
-        // Spawn XP
-        add([
-            polygon([vec2(0, -6), vec2(6, 0), vec2(0, 6), vec2(-6, 0)]),
-            pos(e.pos),
-            anchor("center"),
-            color(255, 255, 0),
-            area(),
-            "xp"
-        ]);
-        
-        // Maybe spawn skeleton if missing
-        if (skeletons.length < maxSkeletons) {
-            spawnSkeleton();
-        }
-        
-        destroy(e);
-    }
-
-    player.onCollide("xp", (x) => {
-        destroy(x);
-        xp += 1;
-        runShards += 1; 
-        checkLevelUp();
-    });
-
-    function checkDeath() {
-        if (playerHp <= 0) {
-            soulShards += runShards;
-            setData("soulShards", soulShards);
-            go("gameover", { runShards: runShards, time: Math.floor(runTime) });
-        }
-    }
-
-    function checkLevelUp() {
-        if (xp >= xpToLevel) {
-            xp -= xpToLevel;
-            level++;
-            xpToLevel = Math.floor(xpToLevel * 1.5);
-            levelText.text = `LVL: ${level}`;
-            shake(15);
-            
-            let upgrades = ["+2 MAX SKELETONS", "+ORBIT RADIUS", "+ORBIT SPEED", "+30 HEAL"];
-            let choice = randi(0, 4); // 0, 1, 2, 3
-            if (choice === 0) maxSkeletons += 2;
-            else if (choice === 1) orbitRadius += 20;
-            else if (choice === 2) orbitSpeed += 1;
-            else {
-                playerHp = Math.min(maxHp, playerHp + 30);
-            }
-
-            add([
-                text(upgrades[choice], { size: 24 }),
-                pos(player.pos.x, player.pos.y - 40),
-                anchor("center"),
-                color(255, 255, 0),
-                move(UP, 50),
-                lifespan(2, { fade: 0.5 })
-            ]);
-        }
-    }
-
-    // Input & Movement
-    onUpdate(() => {
-        let dir = vec2(0, 0);
-        if (isKeyDown("left") || isKeyDown("a")) dir.x -= 1;
-        if (isKeyDown("right") || isKeyDown("d")) dir.x += 1;
-        if (isKeyDown("up") || isKeyDown("w")) dir.y -= 1;
-        if (isKeyDown("down") || isKeyDown("s")) dir.y += 1;
-        
-        if (dir.x !== 0 || dir.y !== 0) {
-            dir = dir.unit();
-            player.move(dir.scale(baseSpeed));
-            
-            // Keep in bounds
-            if (player.pos.x < 20) player.pos.x = 20;
-            if (player.pos.x > 1260) player.pos.x = 1260;
-            if (player.pos.y < 20) player.pos.y = 20;
-            if (player.pos.y > 700) player.pos.y = 700;
-        }
-
-        // update UI
-        hpBarInner.width = 200 * (playerHp / maxHp);
-        xpBarInner.width = 200 * (xp / xpToLevel);
     });
 });
 
 scene("gameover", (data) => {
-    add([rect(1280, 720), color(20, 0, 30)]);
-    add([text("YOU DIED", { size: 80 }), pos(center().x, 200), anchor("center"), color(255, 0, 0)]);
-    add([text(`Survived: ${data.time}s`, { size: 32 }), pos(center().x, 320), anchor("center"), color(255, 255, 255)]);
-    add([text(`Shards Collected: ${data.runShards}`, { size: 32 }), pos(center().x, 380), anchor("center"), color(0, 255, 255)]);
+    add([rect(1280, 720), color(COLOR_BG)]);
+    add([text("CORE BREACHED", { size: 80 }), pos(center().x, 200), anchor("center"), color(COLOR_RED)]);
+    add([text(`Wave Reached: ${data.wave}`, { size: 32 }), pos(center().x, 320), anchor("center"), color(COLOR_LINE)]);
+    add([text(`Score: ${data.score}`, { size: 32 }), pos(center().x, 380), anchor("center"), color(COLOR_ACCENT)]);
     
-    let btn = add([rect(240, 60, {radius: 8}), pos(center().x, 500), anchor("center"), color(0, 255, 128), area()]);
-    btn.add([text("MAIN MENU", {size: 24}), anchor("center"), color(0,0,0)]);
+    let btn = add([rect(240, 60, {radius: 8}), pos(center().x, 500), anchor("center"), color(COLOR_LINE), area()]);
+    btn.add([text("MAIN MENU", {size: 24}), anchor("center"), color(COLOR_BG)]);
     
-    btn.onClick(() => {
-        window.showInterstitialAd();
-        go("menu");
-    });
+    let inputReady = false;
+    wait(0.5, () => inputReady = true);
 
-    let btnAd = add([rect(240, 60, {radius: 8}), pos(center().x, 580), anchor("center"), color(255, 0, 128), area()]);
-    btnAd.add([text("WATCH AD (x2 Shards)", {size: 16}), anchor("center"), color(0,0,0)]);
+    btn.onClick(() => {
+        if (inputReady) {
+            window.showInterstitialAd();
+            go("menu");
+        }
+    });
+    
+    let btnAd = add([rect(240, 60, {radius: 8}), pos(center().x, 580), anchor("center"), color(100, 100, 100), area()]);
+    btnAd.add([text("REVIVE (Watch Ad)", {size: 16}), anchor("center"), color(COLOR_LINE)]);
 
     let adWatched = false;
     btnAd.onClick(() => {
-        if (adWatched) return;
-        window.showRewardedAd(() => {
-            adWatched = true;
-            let currentShards = getData("soulShards") || 0;
-            setData("soulShards", currentShards + data.runShards); // Add again
-            btnAd.color = rgb(100, 100, 100);
-            btnAd.children[0].text = "REWARD CLAIMED";
-        });
+        if (!adWatched && inputReady) {
+            window.showRewardedAd(() => {
+                adWatched = true;
+                stardust += data.score; 
+                setData("stardust", stardust);
+                btnAd.color = rgb(50, 50, 50);
+                btnAd.children[0].text = "REWARD CLAIMED";
+            });
+        }
     });
 });
 
