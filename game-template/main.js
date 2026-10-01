@@ -113,7 +113,10 @@ scene("shop", (data) => {
 });
 
 scene("game", (data) => {
-    if (!data.upgrades) data.upgrades = { orbCount: 1, orbDmg: 1, bounciness: 0.6 };
+    let orbCount = data.upgrades.orbCount || 1;
+    let orbDmg = data.upgrades.orbDmg || 1;
+    let bounciness = data.upgrades.bounciness || 0.6;
+    data.upgrades = { orbCount, orbDmg, bounciness };
     
     let wave = data.wave || 1;
     let scrap = data.scrap || 0;
@@ -138,18 +141,22 @@ scene("game", (data) => {
         "core"
     ]);
     
-    // Pegs scattered around
-    for(let i=0; i<15; i++) {
-        add([
-            circle(10),
-            pos(rand(100, 1180), rand(200, 550)),
-            anchor("center"),
-            color(COLOR_BG),
-            outline(3, COLOR_LINE),
-            area(),
-            body({ isStatic: true }),
-            "peg"
-        ]);
+    // Pegs scattered in a Pachinko layout
+    for(let y=200; y<600; y+=70) {
+        let offset = (y % 140 === 0) ? 0 : 35;
+        for(let x=100; x<1200; x+=70) {
+            if (chance(0.8)) {
+                add([
+                    circle(8),
+                    pos(x + offset, y),
+                    anchor("center"),
+                    color(COLOR_LINE),
+                    area(),
+                    body({ isStatic: true }),
+                    "peg"
+                ]);
+            }
+        }
     }
 
     // Walls
